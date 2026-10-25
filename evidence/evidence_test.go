@@ -273,3 +273,57 @@ func TestEvidenceRotationSchemas(t *testing.T) {
 	nextBody["proof"] = base64.RawURLEncoding.EncodeToString(ed25519.Sign(np, append([]byte("keymaker-witness-ack/1\x00"), pre[len("state-witness-key-transition/1\x00"):]...)))
 	expect(t, decode(), "evidence_invalid")
 }
+
+// A committed head still needs its immediate intent page when anchor=head.
+// Null, shifted and substituted intent references refuse; the exact original
+// intent/receipt page and zero-gap chain manifests pass together.
+func TestEvidenceCommittedIntentProof(t *testing.T) {
+	b, intent, k, p := fixture(t)
+	_, writer := signing(42, 2, records.Writer)
+	body := intent.Body()
+	body["seq"] = int64(2)
+	body["kind"] = "committed"
+	body["prev_hash"] = intent.Hash()
+	body["intent_hash"] = intent.Hash()
+	committed, e := records.DecodeKeymaker(append(sign(t, body, records.RecordDomain, writer), '\n'), b, true)
+	if e != nil {
+		t.Fatal(e)
+	}
+	signer := func(pre []byte) ([]byte, error) { return ed25519.Sign(p, pre), nil }
+	control := strings.Repeat("d", 64)
+	ir, e := evidence.NewReceipt(intent, b, k, control, signer)
+	if e != nil {
+		t.Fatal(e)
+	}
+	receipt, e := evidence.NewReceipt(committed, b, k, control, signer)
+	if e != nil {
+		t.Fatal(e)
+	}
+	page := map[string]any{"v": int64(1), "consumer": "keymaker", "stream": b.Stream(), "chain": "intent", "anchor_seq": int64(2), "anchor_hash": committed.Hash(), "head_seq": int64(2), "head_hash": committed.Hash(), "index": int64(0), "entries": []any{map[string]any{"record": base64.RawURLEncoding.EncodeToString(intent.Line()), "receipt": base64.RawURLEncoding.EncodeToString(ir)}}}
+	pageRaw := canon(t, page)
+	pageHash := records.Digest(pageRaw)
+	if e = evidence.VerifyPage(pageRaw, pageHash, b); e != nil {
+		t.Fatal(e)
+	}
+	reference := map[string]any{"seq": int64(1), "record_hash": intent.Hash(), "page_hash": pageHash}
+	proof := map[string]any{"records": map[string]any{"anchor_seq": int64(2), "anchor_hash": committed.Hash(), "head_seq": int64(2), "head_hash": committed.Hash(), "count": int64(0), "pages": []any{}}, "controls": map[string]any{"anchor_seq": int64(1), "anchor_hash": control, "head_seq": int64(1), "head_hash": control, "count": int64(0), "pages": []any{}}, "intent": reference}
+	challenge := base64.RawURLEncoding.EncodeToString(make([]byte, 32))
+	head, e := evidence.NewHead(committed, b, k, control, receipt, k, control, challenge, proof, signer)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e = evidence.VerifyHead(head, committed, b, k, control, receipt, k, control, challenge); e != nil {
+		t.Fatal(e)
+	}
+	proof["intent"] = nil
+	_, e = evidence.NewHead(committed, b, k, control, receipt, k, control, challenge, proof, signer)
+	expect(t, e, "request_malformed")
+	proof["intent"] = reference
+	reference["seq"] = int64(2)
+	_, e = evidence.NewHead(committed, b, k, control, receipt, k, control, challenge, proof, signer)
+	expect(t, e, "evidence_invalid")
+	reference["seq"] = int64(1)
+	reference["record_hash"] = strings.Repeat("a", 64)
+	_, e = evidence.NewHead(committed, b, k, control, receipt, k, control, challenge, proof, signer)
+	expect(t, e, "evidence_invalid")
+}

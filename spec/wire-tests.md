@@ -75,3 +75,7 @@ Two additional narrowing controls cover the activated registrar path:
 `TestEvidenceRotationSchemas` covers valid writer/witness rotation shapes and
 wrong-domain new-key proof. `TestRecordsRegistrarVectors` and
 `TestEvidenceRegistrarVectors` consume the frozen registrar format/receipt pairs.
+
+`TestEvidenceCommittedIntentProof` pairs an exact committed zero-gap head with
+its required separate original intent page, then rejects absent/shifted/substituted
+intent references. Equal anchors do not remove this evidence requirement.
