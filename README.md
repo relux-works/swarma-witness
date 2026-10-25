@@ -1,6 +1,6 @@
 # Swarma witness
 
-Canonical wire and signature libraries for an append-only state-witness service.
+Canonical wire, signature and pure policy/transport libraries for an append-only state-witness service.
 The server is not implemented, deployed or qualified. Consumers remain in honest mode A until the
 applicable witness and consumer activation gates close. This repository opens no
 listener and provides no append/latest, signer custody or recovery authority.
@@ -8,6 +8,10 @@ The [codec contract](spec/wire-v1.md) describes `wire`, `records` and `evidence`
 closed bindings/carriers, strict Keymaker record verification, bounded signed
 receipt/head/control construction and proof-page checks. Signer callbacks are
 supplied by callers; no production signer is implemented.
+The [S2 policy contract](spec/policy-v1.md) adds protected role/consent/admin
+validation and unserved transport predicates. G07 disclosure and G10 custody
+gates stay closed with no configuration override. Durable replay/grants and
+activation remain S3/S4; record-key rotation remains unavailable.
 
 The conditional contract is the [witness-service specification](https://github.com/relux-works/swarma-keymaker/blob/7a2262ce2b8b84b9e9bc627972d4e07d62d34270/spec/witness-service.md),
 with the separate [Keymaker consumer contract](https://github.com/relux-works/swarma-keymaker/blob/7a2262ce2b8b84b9e9bc627972d4e07d62d34270/spec/keymaker-witness.md).
@@ -40,6 +44,7 @@ published tree. Host scheduling policy is external to this portable Makefile.
 | Tool | Purpose / exact entry point | Outputs and limits |
 | --- | --- | --- |
 | GitHub Actions | `.github/workflows/linux-ci.yml` runs on pull requests and pushes to main with Ubuntu 26.04 and Go 1.26.0: `go mod download`, `go mod verify`, `go mod tidy -diff`, `go build ./...`, `go vet ./...`, `bash -eo pipefail .github/scripts/check-format.sh`, `go run ./tools/hygiene -check`, `go run ./tools/vectors -check`, `go test -mod=readonly ./internal/deppolicy -count=1 -timeout=1m -v`, `python3 .github/scripts/check-hygiene.py`, `bash -eo pipefail .github/scripts/check-controls.sh`, `go test -mod=readonly ./... -count=1 -timeout=1m -v` | Actions logs and private temporary fixtures. Full checkout history is retained. The formatting gate preserves parser failures; isolated controls require stale-checksum, vet, formatting and four generic attribution refusals, including broken Windows-only syntax. Full tests have a one-minute per-package timeout and a ten-minute job limit; no privileged service qualification is claimed. |
+| Policy tests | `make test-policy` | Named narrow policy/config/transport checks; [pending dependencies](spec/policy-tests.md) remain explicit. |
 | Wire tests | `make test-wire` | Console output; exact codec scope only. |
 | Bootstrap tests | `make test` | Named bootstrap package tests, 30-second timeout; console output. Full suites belong to review. |
 | Vet | `make vet` | Bootstrap/tool diagnostics on console. |
@@ -82,4 +87,4 @@ provider/SLA remain open. See [unresolved questions](UNRESOLVED_QUESTIONS.md).
 The S1 negative-first tests and six narrowing controls are documented in the
 [codec checks](spec/wire-tests.md). Frozen [first-party data](testdata/witness-v1/README.md)
 contains no third-party fixtures. Authenticated registrar append, checkpoint verification,
-transport authorization and all storage/service slices remain unavailable.
+production transport authorization and all storage/service slices remain unavailable.

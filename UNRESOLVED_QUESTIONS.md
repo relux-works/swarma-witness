@@ -13,11 +13,11 @@ linked from README; newer accepted consumer decisions need joint reconciliation.
 | G05 | Contract review | Strict pinned Waggle helpers, separate canonical-equality rule, exact enums/nulls and first-party signature vectors implemented. Production custody remains open. |
 | G06 | Contract review | Syntax gate closed by registrar spec 3fc31e4 and mandatory-format code 264660e. Codec uses protected profile literals, no registry/Loader import or 40|64 fallback. Candidate-state validation and authenticated append remain later gates. |
 | G07 | Owner | Service-wide control-metadata disclosure consent is unapproved. Provisioning stays closed until explicit consent or a separately reviewed isolation design. |
-| G08 | Owner and contract review | Fix bootstrap consent evidence, protected storage and one-use consumption. No implicit first use. |
-| G09 | Contract review | Complete administrative authorization, policy hashes, null rules, key transition proof and expected-head CAS. |
+| G08 | Owner and contract review | Pure signed consent/tuple validation implemented; protected storage and durable one-use consumption remain S3/S4. No implicit first use. |
+| G09 | Contract review | Pure administrative authorization, policy hashes, null/CAS/replay and transition validation implemented. Record-key rotation remains unavailable (option B); activation/barriers remain S3/S4. |
 | G10 | Owner and contract review | Decide separate key custody, initial pins, rotation and lost-key continuity. |
-| G11 | Owner and contract review | Accept the exact pinned mTLS/certificate/clock/revocation policy. |
-| G12 | Contract review | Transport-independent carriers, correlation and byte accounting accepted/implemented. HTTP framing, pre-authentication budgets and close-versus-code transport behavior stay open. |
+| G11 | Owner and contract review | Pure pinned mTLS/certificate/interval/revocation predicates; proposed digest preimages require confirmation. Production provider, native adapter, CA/reload and handoff remain unqualified. |
+| G12 | Contract review | Transport-independent carriers, correlation and byte accounting accepted/implemented. Pure HTTP framing, budget/rate predicates and close-versus-code checks implemented; streaming admission, cancellation and runtime qualification stay open. |
 | G13 | Owner and contract review | Review transaction format and qualify actual filesystem durability/protection. |
 | G14 | Owner and contract review | Define immutable archive, retrieval and authorized offline continuity. Never discard acknowledged evidence. |
 | G15 | Contract review | Define independent audit order, lock order, reserve, exhaustion and archive acknowledgements. |
