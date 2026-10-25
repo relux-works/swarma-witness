@@ -98,8 +98,12 @@ They establish specific checker coverage, not universal detection.
 | M00_ECHO_PRIVATE_NAME | Filename redaction | TestHygieneRedactsPrivateNames |
 | M00_ALLOW_CASED_METADATA | Exact member names and non-null values | TestVectorMetadataRequiresExactFields |
 
-Licensed under [Apache-2.0](LICENSE). Control-metadata disclosure consent and the
-independent custodian provider/SLA remain open. See [unresolved questions](UNRESOLVED_QUESTIONS.md).
+Licensed under [Apache-2.0](LICENSE). The owner decision (2026-10-25) records separate
+roles, independent custody with retained recovery evidence, and disclosure closed
+by default: only an explicitly approved reader set, otherwise isolation without
+filtering the signed chain. Concrete custodian selection and protocols/SLA
+remain open; all implementation and qualification gates stay closed. See
+[recorded decisions and remaining dependencies](UNRESOLVED_QUESTIONS.md).
 
 The S1 negative-first tests and six narrowing controls are documented in the
 [codec checks](spec/wire-tests.md). Frozen [first-party data](testdata/witness-v1/README.md)

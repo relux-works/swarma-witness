@@ -79,6 +79,12 @@ history. Free-space checks are not exclusive physical reservations on a shared
 device, nor proof of flush/power-loss behavior. No acknowledged retention is
 truncated. Qualified disk/namespace durability and hard reserve remain PENDING.
 
+The owner decision (2026-10-25), G17 and registry Q10, selects one synchronous
+independent custodian shared by both specs: exact predecessor confirmation and
+fresh reads within the budget, with no periodic or local fallback. The provider
+is not yet chosen; its protocol, SLA and qualification remain open dependencies.
+The stricter exact tuple and independent confirmation rules below still apply.
+
 Checksums establish local integrity only. Before work, independently verified
 record/current-control tuples, audit anchor, exclusion and recovery assessment
 must agree. A coherent older snapshot cannot authorize itself. No qualified
@@ -87,6 +93,12 @@ service, chain, stream, seq, record_hash, receipt_hash and control_hash. Indepen
 audit confirmation uses a separate contract and namespace.
 
 ## Global audit and reader scope
+
+The owner decision (2026-10-25), G14/G15, keeps archive and audit custody separate
+from the record custodian. It selects no archive/audit provider or protocol and
+does not open disclosure, installation, retention or qualification gates. The
+restricted reader rules below and the separate [consumer archive
+constraints](#consumer-archive-interfaces) remain in force.
 
 Audit entries contain exactly `v,seq,at,instance,principal,stream,operation,
 request_id,record_hash,control_hash,result,code,prev_hash` plus LF. Unverified fields
@@ -139,6 +151,16 @@ The in-memory test model demonstrates typed obligations only, not independent
 custody, durable one-use approval or a production archive implementation.
 
 ## Explicit boundaries
+
+The owner decision (2026-10-25), G18, requires that after pause, partition or
+revoke an old instance or clone cannot write, sign or emit anything. Heartbeat,
+flock and CAS are not fences. Lifetime exclusion remains unimplemented and
+unqualified.
+
+The owner decision (2026-10-25), G19, permits only evidence-bound recovery with
+old instances fenced. When ambiguous, hold; never recreate. This records the
+recovery policy without supplying a runbook or opening a recovery path. The
+stricter no-auto-repair/genesis/regeneration/downgrade rules below still apply.
 
 G16 time window codecs, durable use/burn state and enforced read-to-act bounds are
 excluded. Time Prepare/Publish/Release are closed interfaces; their shapes are

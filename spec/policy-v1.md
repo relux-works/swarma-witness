@@ -24,6 +24,17 @@ any witness append credential, that the bridge has no content authority, and
 that the custodian has no registry or witness account access. Local role checks
 and synthetic tests do not establish these custody or isolation properties.
 
+The owner decision (2026-10-25), G10/G11, retains separate roles and independent
+custody with retained recovery evidence. Placement on the trust node and the
+isolated registry-owner signer are unchanged. Concrete custodian options remain
+pending; the role and credential exclusions above still apply and require
+implementation and qualification.
+
+The owner decision (2026-10-25), G07, keeps disclosure closed by default: disclose
+only to an explicitly approved reader set; otherwise isolation, without filtering
+the signed chain. The decision supplies no approval of an actual reader set or
+qualification of an isolation design. Existing closed gates below remain in force.
+
 G07 disclosure approval and G10 custody are unconditional closed gates,
 `stream_unavailable` and `profile_unavailable` respectively. Valid config cannot
 open either. `Handler` is deliberately unserved and does not implement

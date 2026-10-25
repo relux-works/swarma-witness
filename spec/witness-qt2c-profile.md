@@ -646,7 +646,9 @@ recovery semantics, not permission for an expired original execution to resume.
 | Pause/restore after burn before act, replacement executor (N2) | Effect-enforcing current epoch/deadline or proven exclusion must prevent the old P/R/X/TLS executor acting after D/replacement. Burn-time checks alone are insufficient. |
 | Changed run/epoch/challenge (N3) | Retire live prepared entry; logical key and original D persist. A new incarnation cannot allocate a replacement slot for a burned key. |
 
-Independent consumer use/completion rollback authority is an open owner item.
+Independent consumer use/completion rollback authority follows the owner decision
+(2026-10-25): independent custody with retained recovery evidence. Concrete
+provider/protocol selection, coverage of use metadata and qualification remain open.
 Record/control custody and an audit archive acknowledgment do not automatically
 authenticate this new metadata. Its home must establish independently current
 exact root/use ancestry and old-writer exclusion; an unbound sidecar is not enough.
@@ -705,8 +707,8 @@ consumer witness record gains a field here.
 | Native codecs and four WC1TimeUse/1 homes | Contract/consumer owners review bytes, the protected witness-transition-map:1 mapping to enrolled WC1TimeUse:1, frozen-content/completion binding, genesis/migration, capacity, exact outcomes and per-window recovery before any G16 codec. XReleaseCommitted must contain all required authority/recovery durability before send, independent of later accounting; new connection/response transactions do not exist today. Separate use ledger needs explicit owner approval. |
 | Original-reader/provider/witness and entropy | Select qualified installed source graph, independent confirmed history, live custody/invalidation and post-restore challenge/incarnation provenance. Broker interfaces and TLS Consume alone supply none. No circular dependency on WC1 to qualify WC1 time. |
 | Darwin receipt and native parity | Joint provider/platform/consumer review of continuous-domain receipt version, boot/deadline mapping, native lifecycle/exclusion and file/device/namespace/act qualification for every row. No Linux receipt relabel or presumed macOS provider. |
-| G17/G18 and use rollback custody | Owner selects independent exact custody/fresh-read provider, retention and whole-call SLA plus whole-lifetime old/delegated-executor enforcement. Consumer completion/use and audit authority require explicit scopes; existing closed record tuples do not settle them. |
-| G14/G15/G19 | Accept archive/audit acknowledgment protocol, transaction/audit reservation order, retention, exact crash/restore runbooks and authorized recovery phases. Unknown burns remain held; no automatic redispatch, reset, mode downgrade or re-signing. |
+| G17/G18 and use rollback custody | owner decision (2026-10-25): one synchronous independent custodian shared with registry Q10, exact predecessor confirmation and fresh reads within budget, no periodic or local fallback; provider not yet chosen. After pause, partition or revoke, old instances/clones cannot write, sign or emit anything; heartbeat, flock and CAS are not fences. Provider protocol, retention/SLA and lifetime-exclusion qualification remain open. Consumer completion/use and audit authority require explicit scopes; existing closed record tuples do not settle them. See [custody and exclusion constraints](storage-v1.md). |
+| G14/G15/G19 | owner decision (2026-10-25): archive and audit custody are separate from the record custodian; only evidence-bound recovery with old instances fenced, and ambiguity holds without recreation. Archive/audit acknowledgment protocol, transaction/audit reservation order, retention, exact crash/restore runbooks and authorized recovery phases still require acceptance and qualification. Unknown burns remain held; no automatic redispatch, reset, mode downgrade or re-signing. See [stricter recovery boundaries](storage-v1.md#explicit-boundaries). |
 | G20 and registry Q18–Q20 | Accept whole-attempt bridge accounting, protected read-completion measurement, independent exact content/use/visibility authentication and separate consumer exclusion. A WC1 profile or archive receipt does not close these consumer gates. |
 
 No native pause, power-loss, restore or macOS qualification was run for this
