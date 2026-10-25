@@ -1,3 +1,4 @@
 # Documentation inventory|full test-specification name pattern
 spec/policy-tests.md|Test[A-Za-z0-9_]+
 spec/storage-tests.md|Test[A-Za-z0-9_]+
+spec/qualifiedtime-tests.md|Test[A-Za-z0-9_]+

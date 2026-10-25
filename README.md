@@ -17,9 +17,11 @@ interfaces. Its coordinator has no accepting production constructor. Independent
 custodian/archive, time, exclusion, genesis/recovery and deployment qualification
 remain closed. Synthetic providers live only in tests; injected file-call faults
 prove ordering and refusal paths, never power-loss safety.
-The proposed [WC1 QT-2c window profiles](spec/witness-qt2c-profile.md) specify
-prepare/audit, root publication, response release and TLS use transitions;
-all remain unimplemented and unqualified on Linux and macOS.
+The accepted [WC1 QT-2c window profiles](spec/witness-qt2c-profile.md) specify
+prepare/audit, root publication, response release and TLS use transitions. The
+[inactive G16 adapter](spec/qualifiedtime-v1.md) implements codecs, window wiring
+and S3-owned use retention. Production consumption remains `handoff_unqualified`;
+native endpoints, bounds, custody and Linux/macOS qualification stay closed.
 
 The conditional contract is the [witness-service specification](https://github.com/relux-works/swarma-keymaker/blob/7a2262ce2b8b84b9e9bc627972d4e07d62d34270/spec/witness-service.md),
 with the separate [Keymaker consumer contract](https://github.com/relux-works/swarma-keymaker/blob/7a2262ce2b8b84b9e9bc627972d4e07d62d34270/spec/keymaker-witness.md).
@@ -34,7 +36,10 @@ Go 1.26.x is required. Strict crypto helpers use reviewed Waggle S5
 `5f4e7435d75697385ff6ce15a7501ac6f31c8ea5`
 (`v0.0.0-20261025015329-5f4e7435d756`). Its pinned registrar CCJ dependency
 `v0.0.0-20261023164451-5f44ebf3f788` supplies canonical JSON directly.
-The module policy allows only those exact versions. No verifier is copied and
+The inactive time adapter pins broker QT-2c `b38aeda82fb563503960836c771bcc94e8103810`
+(`v0.0.0-20261025184427-b38aeda82fb5`); its Linux timeconf package requires
+`golang.org/x/sys v0.38.0` indirectly. The module policy permits only these four
+exact versions; unrelated broker TOML/D-Bus modules are not admitted. No verifier is copied and
 no replacement directive is allowed. This aligns with K3's adopted spec and the
 owner-registry module; K3's implementation module still pins S3 at the cited
 contract revision. Freshness/journal adapters and checkpoint verification are
@@ -52,15 +57,16 @@ published tree. Host scheduling policy is external to this portable Makefile.
 
 | Tool | Purpose / exact entry point | Outputs and limits |
 | --- | --- | --- |
-| GitHub Actions | `.github/workflows/linux-ci.yml` runs on pull requests and pushes to main with Ubuntu 26.04 and Go 1.26.0: `go mod download`, `go mod verify`, `go mod tidy -diff`, `go build ./...`, `go vet ./...`, `bash -eo pipefail .github/scripts/check-format.sh`, `go run ./tools/hygiene -check`, `go run ./tools/vectors -check`, `go test -mod=readonly ./internal/deppolicy -count=1 -timeout=1m -v`, `python3 .github/scripts/check-hygiene.py`, `bash -eo pipefail .github/scripts/check-controls.sh`, `python3 .github/scripts/check-s3-controls.py`, `go test -mod=readonly ./... -count=1 -timeout=1m -v` | Actions logs and private temporary fixtures. Full checkout history is retained. The formatting gate preserves parser failures; isolated controls require stale-checksum, vet, formatting and four generic attribution refusals, including broken Windows-only syntax. Full tests have a one-minute per-package timeout and a ten-minute job limit; no privileged service qualification is claimed. |
+| GitHub Actions | `.github/workflows/linux-ci.yml` runs on pull requests and pushes to main with Ubuntu 26.04 and Go 1.26.0: `go mod download`, `go mod verify`, `go mod tidy -diff`, `go build ./...`, `go vet ./...`, `bash -eo pipefail .github/scripts/check-format.sh`, `go run ./tools/hygiene -check`, `go run ./tools/vectors -check`, `go test -mod=readonly ./internal/deppolicy -count=1 -timeout=1m -v`, `python3 .github/scripts/check-hygiene.py`, `bash -eo pipefail .github/scripts/check-controls.sh`, `python3 .github/scripts/check-s3-controls.py`, `python3 .github/scripts/check-g16-controls.py`, `go test -mod=readonly -tags=swarma_timeconf_fixture ./internal/qualifiedtime -count=1 -timeout=1m -v`, `go test -mod=readonly ./... -count=1 -timeout=1m -v` | Actions logs and private temporary fixtures. Full checkout history is retained. The formatting gate preserves parser failures; isolated controls require stale-checksum, vet, formatting and four generic attribution refusals, including broken Windows-only syntax. Full tests have a one-minute per-package timeout and a ten-minute job limit; no privileged service qualification is claimed. |
 | PENDING inventory | `bash -eo pipefail .github/scripts/report-pending.sh`; `bash -eo pipefail .github/scripts/check-pending-controls.sh` | CI discovers and lists documentation specifications from `pending-inventories.txt`, requires every `pending-rows.txt` lower-bound row, and refuses empty discovery. New specifications appear dynamically. Controls use isolated private fixtures; no qualification test bodies are executed or claimed passing. |
 | Storage tests and mutation controls | `make test-storage`; `python3 .github/scripts/check-s3-controls.py` | Named transaction/codec checks and thirteen assertion-bound overlay mutations; private temporary files and console logs. [Coverage and PENDING qualification](spec/storage-tests.md). Bounded CAS/exact-retry race command is documented there. |
+| Qualified-time adapter | `make test-time`; `go test -mod=readonly ./store -run '^TestTimeUse' -count=1 -timeout=30s -v`; `python3 .github/scripts/check-g16-controls.py` | Closed default and tagged synthetic P/R/X/TLS checks; ten assertion-bound overlays; private fixtures and console logs. [Coverage and six PENDING qualifications](spec/qualifiedtime-tests.md). No native qualification or activation. |
 | Policy tests | `make test-policy` | Named narrow policy/config/transport checks; [pending dependencies](spec/policy-tests.md) remain explicit. |
 | Wire tests | `make test-wire` | Console output; exact codec scope only. |
 | Bootstrap tests | `make test` | Named bootstrap package tests, 30-second timeout; console output. Full suites belong to review. |
 | Vet | `make vet` | Bootstrap/tool diagnostics on console. |
 | Go build | `make build` | Compiles libraries and the two commands to the Go build cache; no server binary or repository output. |
-| Module verification | `make mod-verify` | Verifies installed module cache entries; exact Waggle and registrar dependency pins. |
+| Module verification | `make mod-verify` | Verifies installed module cache entries; exact Waggle, registrar, broker and syscall dependency pins. |
 | Formatting | `make format` | Lists files needing gofmt on console; empty output is the expected result. |
 | Publication hygiene | `make hygiene` or `go run ./tools/hygiene -check` | Nonzero on bounded private-artifact/key-marker/local-path/identity/tracking/link checks or dependency policy failure. Reports categories and safe relative paths, not matching content. |
 | Private deny list | `go run ./tools/hygiene -check -deny-file <private-list>` | Optional bounded newline-separated forbidden values, held outside the tree; values are not printed. |

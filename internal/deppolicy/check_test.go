@@ -16,12 +16,15 @@ func TestDependencyPolicyRejectsUnapprovedModule(t *testing.T) {
 		{"replace github.com/relux-works/waggle => ../local\n", "directive_not_approved"},
 		{"require github.com/relux-works/swarma-keymaker v1.0.0\n", "dependency_not_approved"},
 		{"toolchain go1.27.0\n", "directive_not_approved"},
+		{"require github.com/relux-works/swarma-credential-broker v1.0.0\n", "dependency_not_approved"},
+		{"require golang.org/x/sys v0.39.0\n", "dependency_not_approved"},
+		{"require github.com/pelletier/go-toml/v2 v2.2.4\n", "dependency_not_approved"},
 	} {
 		if err := Check([]byte(header + example.tail)); err == nil || err.Error() != example.code {
 			t.Fatal("unapproved directive/module accepted", err)
 		}
 	}
-	for _, tail := range []string{"", "require github.com/relux-works/waggle " + WaggleVersion + "\n", "require (\n github.com/relux-works/waggle " + WaggleVersion + " // indirect\n)\n"} {
+	for _, tail := range []string{"", "require github.com/relux-works/waggle " + WaggleVersion + "\n", "require github.com/relux-works/swarma-credential-broker " + BrokerVersion + "\n", "require golang.org/x/sys v0.38.0 // indirect\n", "require (\n github.com/relux-works/waggle " + WaggleVersion + " // indirect\n)\n"} {
 		if err := Check([]byte(header + tail)); err != nil {
 			t.Fatal("approved positive", err)
 		}

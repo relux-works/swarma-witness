@@ -10,6 +10,7 @@ import (
 	"github.com/relux-works/swarma-witness/audit"
 	"github.com/relux-works/swarma-witness/config"
 	"github.com/relux-works/swarma-witness/custodian"
+	"github.com/relux-works/swarma-witness/internal/qualifiedtime"
 	"github.com/relux-works/swarma-witness/policy"
 	"github.com/relux-works/swarma-witness/records"
 	"github.com/relux-works/swarma-witness/store"
@@ -38,14 +39,20 @@ type Service struct {
 	signers       map[string]records.Signer
 	instance      string
 	health        audit.Health
+	windows       *qualifiedtime.Windows
 }
 
 // New cannot open storage or accept provider injection. G07/G10 and G16-G19
 // need separately reviewed provisioning and native adapters before serving.
 func New(p config.Protected) *Service {
-	return &Service{policy: p.Snapshot(), deps: dependencies{custodian.Closed{}, archive.Closed{}, custodian.ClosedExclusion{}, custodian.ClosedRecovery{}, custodian.ClosedTime{}}}
+	return &Service{windows: qualifiedtime.New(), policy: p.Snapshot(), deps: dependencies{custodian.Closed{}, archive.Closed{}, custodian.ClosedExclusion{}, custodian.ClosedRecovery{}, custodian.ClosedTime{}}}
 }
-func (s *Service) Stop() { s.stopped.Store(true) }
+func (s *Service) Stop() {
+	s.stopped.Store(true)
+	if s.windows != nil {
+		s.windows.Stop()
+	}
+}
 func (s *Service) Ready() error {
 	if s.disk == nil || s.stopped.Load() {
 		return wire.Refuse("storage_unavailable")

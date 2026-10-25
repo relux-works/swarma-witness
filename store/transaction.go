@@ -96,7 +96,7 @@ func inspect(dir *os.File, service string, c Calls) (*Disk, error) {
 				return nil, e
 			}
 			v, _, e := Decode(x, pair.magic)
-			if e != nil || v.Transaction != m.Transaction || v.Prior != m.Prior || v.Index != m.Index || v.Audit != m.Audit || v.AuditSeq != m.AuditSeq || v.Policy != m.Policy {
+			if e != nil || v.Transaction != m.Transaction || v.Prior != m.Prior || v.Index != m.Index || v.Audit != m.Audit || v.AuditSeq != m.AuditSeq || v.Policy != m.Policy || v.TimeUses != m.TimeUses {
 				dir.Close()
 				return nil, wire.Refuse("storage_unavailable")
 			}
@@ -115,6 +115,8 @@ func (d *Disk) validateInventory() error {
 	bad := func() error { return wire.Refuse("storage_unavailable") }
 	known := map[string]bool{"root": true}
 	root := d.root
+	var newerUses []TimeUse
+	haveNewerUses := false
 	for depth := 0; ; depth++ {
 		if depth > 1024 {
 			return bad()
@@ -122,6 +124,15 @@ func (d *Disk) validateInventory() error {
 		m, _, e := Decode(root, RootMagic)
 		if e != nil {
 			return bad()
+		}
+		uses, e := d.loadTimeUses(m.TimeUses)
+		if e != nil || haveNewerUses && !validTimeUseStep(uses, newerUses) {
+			return bad()
+		}
+		newerUses = uses
+		haveNewerUses = true
+		if m.TimeUses != "" {
+			known[m.TimeUses+".obj"] = true
 		}
 		known[m.Index+".obj"] = true
 		if _, e = d.object(m.Index, "obj", SegmentLimit); e != nil {
@@ -137,7 +148,7 @@ func (d *Disk) validateInventory() error {
 				return e
 			}
 			v, objects, e := Decode(b, p.magic)
-			if e != nil || v.Phase != p.phase || v.Transaction != m.Transaction || v.Service != m.Service || v.Prior != m.Prior || v.Index != m.Index || v.Policy != m.Policy || v.Audit != m.Audit || v.AuditSeq != m.AuditSeq || v.Chain != m.Chain || v.Stream != m.Stream || v.Seq != m.Seq || v.Previous != m.Previous || v.Head != m.Head {
+			if e != nil || v.Phase != p.phase || v.Transaction != m.Transaction || v.Service != m.Service || v.Prior != m.Prior || v.Index != m.Index || v.Policy != m.Policy || v.Audit != m.Audit || v.AuditSeq != m.AuditSeq || v.Chain != m.Chain || v.Stream != m.Stream || v.Seq != m.Seq || v.Previous != m.Previous || v.Head != m.Head || v.TimeUses != m.TimeUses {
 				return bad()
 			}
 			// Each phase must reference the same objects selected by this root.
@@ -284,6 +295,12 @@ func CheckPlan(m Manifest, objects []Object) error {
 func (d *Disk) Prepare(m Manifest, objects []Object) (*Prepared, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	// Ordinary owning transactions inherit use/tombstone metadata; callers
+	// cannot erase burns by publishing an older service index.
+	m.TimeUses = d.manifest.TimeUses
+	return d.prepareLocked(m, objects)
+}
+func (d *Disk) prepareLocked(m Manifest, objects []Object) (*Prepared, error) {
 	if d.held || m.Prior != Hash(d.root) || m.Service != d.manifest.Service {
 		return nil, wire.Refuse("storage_unavailable")
 	}
@@ -327,6 +344,9 @@ func (d *Disk) Prepare(m Manifest, objects []Object) (*Prepared, error) {
 func (d *Disk) Publish(p *Prepared, acks []Object) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	return d.publishLocked(p, acks)
+}
+func (d *Disk) publishLocked(p *Prepared, acks []Object) error {
 	if p == nil || !d.held || p.manifest.Prior != Hash(d.root) {
 		return wire.Refuse("storage_unavailable")
 	}

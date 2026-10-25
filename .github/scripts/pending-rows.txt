@@ -14,3 +14,9 @@ spec/storage-tests.md TestStorageLifetimeExclusion
 spec/storage-tests.md TestStorageExactRecoveryAndGenesis
 spec/storage-tests.md TestStorageQualifiedTimeWindows
 spec/storage-tests.md TestStorageDeviceAndArchiveRetention
+spec/qualifiedtime-tests.md TestWC1NativeQualification
+spec/qualifiedtime-tests.md TestWC1EnforcedPostReadBound
+spec/qualifiedtime-tests.md TestWC1RealUseCustody
+spec/qualifiedtime-tests.md TestWC1RealWitness
+spec/qualifiedtime-tests.md TestWC1RealOriginalReader
+spec/qualifiedtime-tests.md TestWC1MacOSParity

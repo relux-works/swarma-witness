@@ -1,10 +1,14 @@
 GO ?= go
 
-.PHONY: test test-wire test-policy test-storage vet build hygiene vectors format mod-verify
+.PHONY: test test-time test-wire test-policy test-storage vet build hygiene vectors format mod-verify
 
 # Only the bootstrap packages are exercised here. Full suites belong to review.
 test:
 	$(GO) test ./internal/hygiene ./internal/vectors ./internal/deppolicy ./tools/hygiene ./tools/vectors -count=1 -timeout=30s
+
+test-time:
+	$(GO) test -mod=readonly ./internal/qualifiedtime ./internal/deppolicy -count=1 -timeout=3m
+	$(GO) test -mod=readonly -tags=swarma_timeconf_fixture ./internal/qualifiedtime -count=1 -timeout=1m
 
 test-wire:
 	$(GO) test ./wire ./records ./evidence -run 'Test(Wire|Record|Records|Evidence)' -count=1 -timeout=60s

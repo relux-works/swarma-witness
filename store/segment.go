@@ -25,6 +25,7 @@ type Object struct {
 }
 type Manifest struct {
 	Service, Transaction, Phase, Prior, Index, Policy string
+	TimeUses                                          string
 	Chain, Stream                                     string
 	Seq                                               int64
 	Previous, Head                                    string
@@ -64,7 +65,12 @@ func manifestMap(m Manifest, objects []Object) map[string]any {
 	if m.Stream != "" {
 		stream = m.Stream
 	}
-	return map[string]any{"v": int64(1), "service": m.Service, "transaction": m.Transaction, "phase": m.Phase, "prior_root": m.Prior, "index_hash": m.Index, "policy_hash": m.Policy, "chain": m.Chain, "stream": stream, "seq": m.Seq, "prev_hash": m.Previous, "head_hash": m.Head, "audit_seq": m.AuditSeq, "audit_hash": m.Audit, "segment_hash": m.Segment, "prepare_hash": m.Prepare, "resolution_hash": m.Resolution, "objects": items}
+	result := map[string]any{"v": int64(1), "service": m.Service, "transaction": m.Transaction, "phase": m.Phase, "prior_root": m.Prior, "index_hash": m.Index, "policy_hash": m.Policy, "chain": m.Chain, "stream": stream, "seq": m.Seq, "prev_hash": m.Previous, "head_hash": m.Head, "audit_seq": m.AuditSeq, "audit_hash": m.Audit, "segment_hash": m.Segment, "prepare_hash": m.Prepare, "resolution_hash": m.Resolution, "objects": items}
+	if m.TimeUses != "" {
+		result["v"] = int64(2)
+		result["time_use_hash"] = m.TimeUses
+	}
+	return result
 }
 
 // Encode has an outer complete-payload length, an inner manifest length, exact
@@ -157,8 +163,17 @@ func Decode(b []byte, magic string) (Manifest, []Object, error) {
 	if e != nil || !bytes.Equal(raw, canon) {
 		return fail()
 	}
-	x, e := wire.Object(v, "v", "service", "transaction", "phase", "prior_root", "index_hash", "policy_hash", "chain", "stream", "seq", "prev_hash", "head_hash", "audit_seq", "audit_hash", "segment_hash", "prepare_hash", "resolution_hash", "objects")
-	if e != nil || !wire.One(x["v"]) || !wire.Name(x["service"]) || !wire.Hash(x["transaction"]) || !wire.Integer(x["seq"], 0, wire.MaxInt) || !wire.Integer(x["audit_seq"], 0, wire.MaxInt) {
+	fields := []string{"v", "service", "transaction", "phase", "prior_root", "index_hash", "policy_hash", "chain", "stream", "seq", "prev_hash", "head_hash", "audit_seq", "audit_hash", "segment_hash", "prepare_hash", "resolution_hash", "objects"}
+	version := int64(1)
+	if obj, ok := v.(map[string]any); ok && obj["v"] == int64(2) {
+		version = 2
+		fields = append(fields, "time_use_hash")
+	}
+	x, e := wire.Object(v, fields...)
+	if e != nil || x["v"] != version || !wire.Name(x["service"]) || !wire.Hash(x["transaction"]) || !wire.Integer(x["seq"], 0, wire.MaxInt) || !wire.Integer(x["audit_seq"], 0, wire.MaxInt) {
+		return fail()
+	}
+	if version == 2 && (!wire.Hash(x["time_use_hash"]) || x["time_use_hash"] == wire.ZeroHash) {
 		return fail()
 	}
 	for _, k := range []string{"prior_root", "index_hash", "policy_hash", "prev_hash", "head_hash", "audit_hash", "segment_hash", "prepare_hash", "resolution_hash"} {
@@ -207,5 +222,5 @@ func Decode(b []byte, magic string) (Manifest, []Object, error) {
 	if offset != len(b)-32 {
 		return fail()
 	}
-	return Manifest{Service: wire.String(x["service"]), Transaction: wire.String(x["transaction"]), Phase: phase, Prior: wire.String(x["prior_root"]), Index: wire.String(x["index_hash"]), Policy: wire.String(x["policy_hash"]), Chain: chain, Stream: wire.String(x["stream"]), Seq: x["seq"].(int64), Previous: wire.String(x["prev_hash"]), Head: wire.String(x["head_hash"]), AuditSeq: x["audit_seq"].(int64), Audit: wire.String(x["audit_hash"]), Segment: wire.String(x["segment_hash"]), Prepare: wire.String(x["prepare_hash"]), Resolution: wire.String(x["resolution_hash"])}, objects, nil
+	return Manifest{TimeUses: wire.String(x["time_use_hash"]), Service: wire.String(x["service"]), Transaction: wire.String(x["transaction"]), Phase: phase, Prior: wire.String(x["prior_root"]), Index: wire.String(x["index_hash"]), Policy: wire.String(x["policy_hash"]), Chain: chain, Stream: wire.String(x["stream"]), Seq: x["seq"].(int64), Previous: wire.String(x["prev_hash"]), Head: wire.String(x["head_hash"]), AuditSeq: x["audit_seq"].(int64), Audit: wire.String(x["audit_hash"]), Segment: wire.String(x["segment_hash"]), Prepare: wire.String(x["prepare_hash"]), Resolution: wire.String(x["resolution_hash"])}, objects, nil
 }
