@@ -147,6 +147,9 @@ func (s *Service) Read(ctx context.Context, peer policy.Peer, method, stream, id
 	}
 	_, e = s.commit(ctx, s.state, store.Manifest{Chain: "audits"}, nil, s.auditFields(peer, stream, method, id, "", "refused", "profile_unavailable"), nil)
 	if e != nil {
+		// Hold before releasing this read's reservation; failed audit cannot
+		// leave another operation admitted. Never recurse into failure audit.
+		s.fail(false)
 		return nil, e
 	}
 	return nil, wire.Refuse("profile_unavailable")

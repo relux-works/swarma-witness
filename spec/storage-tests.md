@@ -13,9 +13,11 @@ The [local contract](storage-v1.md) states codecs, barriers and closed defaults.
 | TestAdminActivationIsAtomicWithHistory | Failed custody keeps old key/policy; success retains old-key receipt, atomic new-key activation and exact action replay after reopen. | M03_ACTIVATE_KEY_BEFORE_CONTROL_ACK: new key activated before control ack |
 | TestAuditFailureClosesAdmissionWithoutRecursion | Archive failure prevents append/retry release; reentrant append is busy; audit exhaustion and default reader deny. Valid independent ack commits. | M03_RELEASE_WITHOUT_AUDIT: retry requires durable audit; M03_AUDIT_APPEND_RECURSION: audit append recursion denied |
 | TestStorageReserveAndRetentionFailClosed | Coherent old snapshot fails independent check before work; full logical history changes no root and deletes no retained entry. Closed custodian signs/writes nothing; authorization precedes inner evidence. | M03_LOCAL_HASH_ONLY: local hash alone cannot accept rollback; M03_DELETE_HISTORY_ON_FULL: full history must not be deleted |
+| TestReviewerPhaseLinksAgreeOnReopen | Three independently inconsistent prepare/segment/outcome links refuse storage_unavailable on Inspect; valid closure reopens unchanged. The prepare-segment fixture keeps outcome-prepare consistent to isolate the broken link. | M03_SKIP_OUTCOME_PREPARE_LINK: inconsistent outcome-prepare link accepted on reopen |
+| TestReviewerReadAuditReserveClosesAdmission | Both latest/proof_page fence audit-full, local-storage and independent-storage failures before releasing admission; preflight leaves root unchanged and a later append signs nothing. Available audited read remains ready. | M03_SKIP_READ_AUDIT_FENCE: audit reserve loss must close admission |
 
 `python3 .github/scripts/check-s3-controls.py` runs a green unchanged control and
-isolated source overlays for all eleven rows above. Each mutant must exit1 at the
+isolated source overlays for all thirteen mutants above. Each mutant must exit1 at the
 named test assertion. Compilation, setup failures, timeouts and missing assertion
 text are survivors. The recursion mutant removes both bounded reservation-entry
 guards; it does not cover all conceivable recursive logging designs. The digest
@@ -38,6 +40,9 @@ Additional scoped tests:
 | TestAuditReadersAndBoundedHealth | Explicit global principal/pin membership only; copied grants, duplicate-pin rejection, saturating fixed counters and bounded diagnostic allowance. |
 | TestArchiveExactRetrievalAndSeparateAnchor | Test-only archive retains exact bytes and checks length/hash; anchor advancement needs distinct approval/continuity/fresh-head facts and rejects replay. No durable approval or real provider is modeled. |
 | TestArchiveDefaultsClosed | Production retention/retrieval/audit refuse storage_unavailable; unaccepted offline verification/advancement refuse profile_unavailable. |
+| TestReviewerCheckedCloseBeforeRename | A checked-close error prevents rename, paired with exact completed-root reopen; retained reviewer control. |
+| TestReviewerReopenDamage | Truncation, damaged original, unknown/staged names and multiple links refuse Inspect; isolated local fixtures only. |
+| TestReviewerCustodyUnlockedAndStopCloses | Custody holds no final local gates; stop during confirmation prevents release/publication, paired with completed transaction. |
 | TestServiceDependenciesStayClosed | Closed time/exclusion/recovery prevents root publication; test-only accepting facts isolate each dependency. |
 
 No attack-surface table was supplied with this slice; this test map is not an

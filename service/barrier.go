@@ -163,6 +163,11 @@ func (s *Service) reserve(ctx context.Context, peer policy.Peer, method, stream 
 	s.admission.Unlock()
 	end := func() { s.admission.Lock(); s.pending = false; s.admission.Unlock(); s.active.Store(false) }
 	if e := s.checkIndependent(ctx); e != nil {
+		if (method == "latest" || method == "proof_page") && wire.Code(e) == "storage_unavailable" {
+			// Fence read storage failures while this reservation still excludes
+			// contenders, before end makes the coordinator available again.
+			s.fail(false)
+		}
 		end()
 		return nil, e
 	}

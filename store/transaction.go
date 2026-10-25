@@ -140,6 +140,13 @@ func (d *Disk) validateInventory() error {
 			if e != nil || v.Phase != p.phase || v.Transaction != m.Transaction || v.Service != m.Service || v.Prior != m.Prior || v.Index != m.Index || v.Policy != m.Policy || v.Audit != m.Audit || v.AuditSeq != m.AuditSeq || v.Chain != m.Chain || v.Stream != m.Stream || v.Seq != m.Seq || v.Previous != m.Previous || v.Head != m.Head {
 				return bad()
 			}
+			// Each phase must reference the same objects selected by this root.
+			if (p.phase == "prepare" || p.phase == "outcome") && v.Segment != m.Segment {
+				return bad()
+			}
+			if p.phase == "outcome" && v.Prepare != m.Prepare {
+				return bad()
+			}
 			for _, o := range objects {
 				hash := Hash(o.Bytes)
 				known[hash+".obj"] = true

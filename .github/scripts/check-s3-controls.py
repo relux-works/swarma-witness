@@ -29,6 +29,8 @@ BARRIER = "TestPreparedReceiptCannotEscapeBarriers"
 AUDIT = "TestAuditFailureClosesAdmissionWithoutRecursion"
 ADMIN = "TestAdminActivationIsAtomicWithHistory"
 RESERVE = "TestStorageReserveAndRetentionFailClosed"
+PHASE = "TestReviewerPhaseLinksAgreeOnReopen"
+READ_AUDIT = "TestReviewerReadAuditReserveClosesAdmission"
 mutants = [
     ("M03_SKIP_HEAD_CAS", CAS, "CAS expected predecessor", [change("service/append.go", "if expected.Seq != headSeq || expected.Hash != headHash || seq != headSeq+1 || body[\"prev_hash\"] != headHash {", "if seq != headSeq+1 || body[\"prev_hash\"] != headHash {")]),
     ("M03_RETRY_BY_DIGEST_ONLY", RETRY, "digest equality cannot replace exact bytes", [change("service/append.go", "return digestEqual && bytes.Equal(original, line)", "return digestEqual && bytes.Equal(original, original)")]),
@@ -41,10 +43,12 @@ mutants = [
     ("M03_LOCAL_HASH_ONLY", RESERVE, "local hash alone cannot accept rollback", [change("service/barrier.go", "if e := s.checkIndependent(ctx); e != nil {", "if e := error(nil); e != nil {")]),
     ("M03_RETRY_NEW_RECEIPT", RETRY, "retry creates no new receipt", [change("service/append.go", "// Exact retry is an audit-only transaction.", "_, _ = evidence.NewReceipt(record, binding, old.Witness, old.Control, s.signers[old.Witness.Public])\n\t\t// Exact retry is an audit-only transaction.")]),
     ("M03_AUDIT_APPEND_RECURSION", AUDIT, "audit append recursion denied", [change("service/barrier.go", "if !s.active.CompareAndSwap(false, true) {", "if false && !s.active.CompareAndSwap(false, true) {"), change("service/barrier.go", "s.disk == nil || s.pending || s.held || s.stopped.Load()", "s.disk == nil || s.held || s.stopped.Load()")]),
+    ("M03_SKIP_OUTCOME_PREPARE_LINK", PHASE, "inconsistent outcome-prepare link accepted on reopen", [change("store/transaction.go", 'if p.phase == "outcome" && v.Prepare != m.Prepare {', 'if false {')]),
+    ("M03_SKIP_READ_AUDIT_FENCE", READ_AUDIT, "audit reserve loss must close admission", [change("service/append.go", "\t\ts.fail(false)\n\t\treturn nil, e\n\t}\n\treturn nil, wire.Refuse(\"profile_unavailable\")", "\t\treturn nil, e\n\t}\n\treturn nil, wire.Refuse(\"profile_unavailable\")")]),
 ]
 
 # Valid control first; the source and test identities match every overlay.
-base = ["go", "test", "-mod=readonly", "./service", "-run", "^(" + "|".join([CAS, RETRY, BARRIER, AUDIT, ADMIN, RESERVE]) + ")$", "-count=1", "-timeout=90s", "-v"]
+base = ["go", "test", "-mod=readonly", "./store", "./service", "-run", "^(" + "|".join([CAS, RETRY, BARRIER, AUDIT, ADMIN, RESERVE, PHASE, READ_AUDIT]) + ")$", "-count=1", "-timeout=90s", "-v"]
 result = subprocess.run(base, cwd=ROOT, capture_output=True, text=True, timeout=120)
 print(json.dumps({"control": "unchanged", "command": base, "exit": result.returncode}), flush=True)
 if result.returncode:
@@ -64,7 +68,7 @@ with tempfile.TemporaryDirectory(prefix="s3-controls-") as scratch:
             overlay["Replace"][str(ROOT / path)] = str(destination)
         overlay_path = directory / "overlay.json"
         overlay_path.write_text(json.dumps(overlay))
-        command = ["go", "test", "-mod=readonly", "-overlay=" + str(overlay_path), "./service", "-run", "^" + test + "$", "-count=1", "-timeout=30s", "-v"]
+        command = ["go", "test", "-mod=readonly", "-overlay=" + str(overlay_path), "./store" if test == PHASE else "./service", "-run", "^" + test + "$", "-count=1", "-timeout=30s", "-v"]
         result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=45)
         output = result.stdout + result.stderr
         killed = result.returncode == 1 and assertion in output and "--- FAIL: " + test in output and "[build failed]" not in output and "panic: test timed out" not in output

@@ -13,7 +13,7 @@ test-policy:
 	$(GO) test ./policy ./config ./transport -run 'Test(ACL|Provision|Admin|Rotation|TLS)' -count=1 -timeout=60s
 
 test-storage:
-	$(GO) test ./store ./audit ./archive ./service -run 'Test(CAS|Occupied|Prepared|AdminActivation|AuditFailure|Storage|AuditClosed|AuditReaders|Archive|ServiceDependencies)' -count=1 -timeout=90s
+	$(GO) test ./store ./audit ./archive ./service -run 'Test(CAS|Occupied|Prepared|AdminActivation|AuditFailure|Storage|AuditClosed|AuditReaders|Archive|ServiceDependencies|Reviewer)' -count=1 -timeout=90s
 
 vet:
 	$(GO) vet ./internal/hygiene ./internal/vectors ./internal/deppolicy ./tools/hygiene ./tools/vectors
