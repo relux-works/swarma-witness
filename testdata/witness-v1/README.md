@@ -1,9 +1,14 @@
 # Witness vector data
 
-This repository is the authoritative source of witness vectors. The bootstrap
-manifest is empty: there are no protocol vectors or conformance results yet.
-No third-party fixture data is included. Unit tests generate their own disposable
-integrity controls, which are not witness records.
+This repository is the authoritative source of witness vectors. The manifest
+contains first-party S1 codec fixtures. No third-party fixture
+data is included. `wire.json` carries a valid request and four negative twins;
+`keymaker.json` carries a closed binding, a signed bootstrap intent and independently
+signed wrong-domain twin, a frozen LF-inclusive hash, and a signed receipt with
+distinct writer/witness epochs. Public keys are disposable fixture identities,
+not deployment pins. `registrar.json` binds the landed spec revision and carries
+both protected formats, wrong-format twins, LF hashes and neutral receipts. No private keys are distributed. Tests never regenerate
+these bytes and also check signatures using literal domains and stdlib Ed25519.
 
 Manifest version 1 is a closed JSON object with exactly `schema` (integer 1) and
 `files` (array). Each entry has exactly `path`, `size` and `sha256`. Paths are
@@ -38,9 +43,12 @@ self-pin is committed in the corpus: a commit cannot contain its own object ID.
 The consumer records the real commit and digest only after the fixture commit
 exists and has been reviewed. A changed corpus needs an explicit consumer lock
 update; branch names, moving tags and regeneration during tests are insufficient.
-An empty-corpus integrity PASS still reports protocol work PENDING.
+Integrity PASS is not protocol or consumer conformance.
 
-Future vectors must bind negative cases to nearby valid controls, expected exact
+Additional vectors must bind negative cases to nearby valid controls, expected exact
 codes, permitted audit changes and retained-state invariants. Fixed byte hashes
 and signature expectations need independent review. Consumer codecs and the
 server must independently exercise the same data. Such integration remains open.
+
+Only byte/schema/signature properties are exercised. No service, registrar
+admission, registry checkpoint admission or consumer deployment is qualified.

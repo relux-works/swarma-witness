@@ -1,0 +1,30 @@
+{
+  "cases": [
+    {
+      "code": "",
+      "name": "canonical",
+      "raw": "eyJtZXRob2QiOiJwcm9vZl9wYWdlIiwicGFyYW1zIjp7InBhZ2VfaGFzaCI6InNoYTI1NjphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwic3RyZWFtIjoiZml4dHVyZS1zdHJlYW0ifSwicmVxdWVzdF9pZCI6ImNjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjIiwidGltZW91dF9tcyI6NTAwMCwidiI6MX0"
+    },
+    {
+      "code": "request_malformed",
+      "name": "duplicate-alias",
+      "raw": "eyJ2IjoxLCJcdTAwNzYiOjF9"
+    },
+    {
+      "code": "request_malformed",
+      "name": "space",
+      "raw": "IHsibWV0aG9kIjoicHJvb2ZfcGFnZSIsInBhcmFtcyI6eyJwYWdlX2hhc2giOiJzaGEyNTY6YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInN0cmVhbSI6ImZpeHR1cmUtc3RyZWFtIn0sInJlcXVlc3RfaWQiOiJjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInRpbWVvdXRfbXMiOjUwMDAsInYiOjF9"
+    },
+    {
+      "code": "request_malformed",
+      "name": "wrong-enum",
+      "raw": "eyJtZXRob2QiOiJvdGhlciIsInBhcmFtcyI6eyJwYWdlX2hhc2giOiJzaGEyNTY6YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInN0cmVhbSI6ImZpeHR1cmUtc3RyZWFtIn0sInJlcXVlc3RfaWQiOiJjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInRpbWVvdXRfbXMiOjUwMDAsInYiOjF9"
+    },
+    {
+      "code": "request_malformed",
+      "name": "missing-version",
+      "raw": "eyJtZXRob2QiOiJwcm9vZl9wYWdlIiwicGFyYW1zIjp7InBhZ2VfaGFzaCI6InNoYTI1NjphYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwic3RyZWFtIjoiZml4dHVyZS1zdHJlYW0ifSwicmVxdWVzdF9pZCI6ImNjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjIiwidGltZW91dF9tcyI6NTAwMH0"
+    }
+  ],
+  "schema": 1
+}

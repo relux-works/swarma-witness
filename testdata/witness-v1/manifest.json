@@ -1,1 +1,1 @@
-{"schema":1,"files":[]}
+{"schema":1,"files":[{"path":"keymaker.json","size":3963,"sha256":"5e9c9e8be1e325557f3d0fef0cccf0a0f8e9fa9aef886e162023c9834e504a48"},{"path":"registrar.json","size":5218,"sha256":"8e2f2fb05fa19a34da1efd85fada23fe3402b52960e818309fbaeca8860fda5d"},{"path":"wire.json","size":1656,"sha256":"7457326219da3fee2d512cf997b5b2b5ce49c36eb9f7b9a991b8b2f1881c641e"}]}

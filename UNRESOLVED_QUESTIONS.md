@@ -7,17 +7,17 @@ linked from README; newer accepted consumer decisions need joint reconciliation.
 | ID | Owner | Status / required decision |
 | --- | --- | --- |
 | G01 | Owner | Public license remains open. No LICENSE file or third-party fixture data is added; visibility does not imply redistribution permission. |
-| G02 | Contract review | Go 1.26.x accepted. Only Waggle S3 at the reviewed commit and Keymaker by explicit reviewed pin where needed; no copied verifier or S4 upgrade. S0 needs no dependency. |
+| G02 | Contract review | Go 1.26.x accepted. Waggle S5 and its exact registrar CCJ dependency are approved and pinned; see spec/wire-v1.md. No copied verifier. Adapter activation remains separate. |
 | G03 | Contract review | This repository owns vector data. Consumers pin immutable commit plus exact manifest digest and take bytes. Closed bootstrap metadata is documented; protocol vectors remain pending. |
-| G04 | Contract review | Close nested bindings, profile identifiers, key representations, pins and reader schemas before affected codecs. |
-| G05 | Contract review | Fix strict crypto acceptance, exact field types/enums and independent signature vectors. |
-| G06 | Contract review | Fix registrar full revision-object-ID grammar and refusal mapping. |
+| G04 | Contract review | Codec schemas accepted and implemented in wire; provisioning/consent/role enforcement remain S2 gates. |
+| G05 | Contract review | Strict pinned Waggle helpers, separate canonical-equality rule, exact enums/nulls and first-party signature vectors implemented. Production custody remains open. |
+| G06 | Contract review | Syntax gate closed by registrar spec 3fc31e4 and mandatory-format code 264660e. Codec uses protected profile literals, no registry/Loader import or 40|64 fallback. Candidate-state validation and authenticated append remain later gates. |
 | G07 | Owner | Service-wide control-metadata disclosure consent is unapproved. Provisioning stays closed until explicit consent or a separately reviewed isolation design. |
 | G08 | Owner and contract review | Fix bootstrap consent evidence, protected storage and one-use consumption. No implicit first use. |
 | G09 | Contract review | Complete administrative authorization, policy hashes, null rules, key transition proof and expected-head CAS. |
 | G10 | Owner and contract review | Decide separate key custody, initial pins, rotation and lost-key continuity. |
 | G11 | Owner and contract review | Accept the exact pinned mTLS/certificate/clock/revocation policy. |
-| G12 | Contract review | Fix HTTP framing, response carriers, pre-authentication bounds and close-versus-code behavior before transport codecs. |
+| G12 | Contract review | Transport-independent carriers, correlation and byte accounting accepted/implemented. HTTP framing, pre-authentication budgets and close-versus-code transport behavior stay open. |
 | G13 | Owner and contract review | Review transaction format and qualify actual filesystem durability/protection. |
 | G14 | Owner and contract review | Define immutable archive, retrieval and authorized offline continuity. Never discard acknowledged evidence. |
 | G15 | Contract review | Define independent audit order, lock order, reserve, exhaustion and archive acknowledgements. |
@@ -35,5 +35,5 @@ linked from README; newer accepted consumer decisions need joint reconciliation.
 | G27 | Contract review | Specify bounded admission/rate/memory/reserve algorithms and precedence. |
 | G28 | Owner and contract review | Define exact qualification identity, acceptance thresholds and isolated fault environment. |
 | G29 | Owner and contract review | Decide deployment, custody, readiness and shutdown ownership. Bootstrap authorizes none of these. |
-| G30 | Contract review | Align stale references with accepted real-head snapshot reissue and separate idle currentness. S4 format/API remains pending here. |
+| G30 | Contract review | Align stale references with accepted real-head snapshot reissue and separate idle currentness. S5 helpers are pinned; freshness/currentness adapters remain inactive here. |
 | G31 | Contract review | Accept pre-intent genesis and historical-checkpoint verification paths. Existing S3 VerifyJournal expects authenticated witness facts; never fabricate them or weaken its global checks. |
