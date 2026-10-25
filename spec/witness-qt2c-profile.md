@@ -25,6 +25,8 @@ there is no S3 storage implementation to cite as a qualified mechanism.
 | Handoff | [Broker handoff, including N1–N3 and named controls](https://github.com/relux-works/swarma-credential-broker/blob/7294b7aea68a8e0757437075efa3a6e318a18e51/docs/time-handoff.md) |
 | Mac | [Mandatory macOS binding](https://github.com/relux-works/swarma-credential-broker/blob/7294b7aea68a8e0757437075efa3a6e318a18e51/docs/time-handoff-macos.md) |
 | API mapping | [Broker Run/Epoch and native-operation mapping](https://github.com/relux-works/swarma-credential-broker/blob/b38aeda82fb563503960836c771bcc94e8103810/docs/time-handoff-api.md), especially lines 85–102; mapping reference only, no dependency or activation change |
+| Release rule | [Required durability before success](https://github.com/relux-works/swarma-credential-broker/blob/b38aeda82fb563503960836c771bcc94e8103810/docs/time-handoff.md#L148-L155) |
+| Transition alphabet | [Broker enrolled-ID alphabet](https://github.com/relux-works/swarma-credential-broker/blob/b38aeda82fb563503960836c771bcc94e8103810/timeconf/receipt.go#L103) and [handoff transition-version validation](https://github.com/relux-works/swarma-credential-broker/blob/b38aeda82fb563503960836c771bcc94e8103810/timeconf/handoff_linux.go#L158) |
 | WS | [Conditional service contract](https://github.com/relux-works/swarma-keymaker/blob/b232f6aec52e9327daffd8e889b52ed0ebd2fd3f/spec/witness-service.md), especially lines 181–243, 473–544 and 598–616 |
 | H | [S2 transport predicates](https://github.com/relux-works/swarma-witness/blob/c18d70040d11a6a03078df1e61c1bf3aa0dae85a/transport/handler.go) |
 | TLS | [S2 qualified-time interface and TLS predicates](https://github.com/relux-works/swarma-witness/blob/c18d70040d11a6a03078df1e61c1bf3aa0dae85a/transport/tls.go) |
@@ -177,6 +179,22 @@ closure references in use-owned metadata linked to the frozen content; no H is
 required inside that content or any closed WS wire object. Those references
 must be bounded, retained and independently authenticated, not just hashed.
 
+**Protected transition mapping.** Proposed mapping version
+`witness-transition-map:1` has exactly one reviewed entry:
+native `WC1TimeUse/1` ↔ enrolled `WC1TimeUse:1`. The native name labels WC1's
+owning transaction semantics; the enrolled value is the broker-facing
+`transition_version`. The protected enrollment fixes this exact case-sensitive
+pair and mapping version for all four windows. At preparation, derive
+`WindowExpected.TransitionVersion` and handoff metadata `TransitionVersion` from
+that entry; at encoding, supply the identical enrolled `WC1TimeUse:1` to
+`EncodeHandoff`, never the native slash-bearing name. Decoding/verification must
+match the same protected entry and expected value before use. The inverse
+mapping accepts only that exact enrolled literal. No generic slash substitution,
+caller-selected mapping, version inference or fallback is permitted. Missing or
+changed mapping, literal `WC1TimeUse/1` in the broker field and wrong version
+`WC1TimeUse:2` refuse; syntactic acceptance of another enrolled ID is insufficient.
+The mapping neither creates a new logical slot nor changes any broker/WS codec.
+
 The future native transition retains the exact stable logical tuple below
 alongside the broker `Operation` digest binding the live epoch and native read
 set. Broker `Run` is a private per-attempt nonce; `Epoch` is the independently
@@ -192,7 +210,10 @@ For each key below, compare exact predecessor and independently proven
 `unused(v)` under the final chain. `unused(v) -> burned(v+1, exact intent)` is
 durable before the separable act. Then only that still-live fenced admission
 may make its one act attempt within f/D. `burned -> committed(exact outcome)`
-requires the full endpoint; incomplete/unknown becomes `held`, still burned.
+requires all authoritative local durability/recovery bindings; incomplete or
+unknown authority becomes `held`, still burned. Each window also requires its
+full endpoint. For X, the committed outcome is **release authority before send**,
+not a claim of delivery; its distinct send bound and later accounting are below.
 No fresh H, challenge, run or epoch, failed act, missing file or restored root makes
 it unused. Provider W, holds and associations were settled earlier and never
 refund. An atomic act/use alternative requires a demonstrated transaction, not
@@ -370,16 +391,23 @@ has no H cycle. Request IDs, reconnects and lost replies allocate no extra slot.
 ### 2. Canonical timing meanings
 
 s=X observation, p=s, m=sole read after release persistence/use admission and all
-final gates. T_X spans s through durable release outcome **and actual complete
-frame write**, including all required completion/readback barriers. Inherit
+final gates. T_X spans s through the durable pre-send release/use commit and
+actual complete frame write; all required authority readback/barriers precede
+the first response byte. Separately specify positive enforced bounds
+`f_X_commit` from m through that durable commit and `f_X_send` from commit
+completion through the complete actual send, including any intervening pause
+and required transport completion. Require checked
+`f_X_commit + f_X_send <= f_X`, with the shared T_X/original-D inequalities and
+epsilon charged once. There is no second clock read or new allowance at commit.
+Both component bounds are currently **undefined/refuse**. Inherit
 original WS:527–532 and H:110–122 accept/caller limits, without restarting after
-R. No separate post-commit egress allowance is specified. Independently authorized
+R; `f_X_send` is inside that budget, not a post-commit extension. Independently authorized
 re-exposure/offline output job and its original budget are **undefined/refuse**.
 
 ### 3. Uncertainty coverage
 
-X obtains its own original settlement reserve for preparation, burn, complete
-write and durable outcome; all shared interval/floor/authority and retained
+X obtains its own original settlement reserve for preparation, burn, durable
+pre-send release/use commit and complete send; all shared interval/floor/authority and retained
 issuance predicates apply to the exact response. TLS/P/R reserves, audit `at`
 and stored receipt age are not X evidence. Delayed/blocked writes cannot silently
 consume a new reserve or enlarge D/T.
@@ -403,32 +431,73 @@ revision before m. The connection reservation is taken before G, never acquired
 by a callback under L. Pure check follows the single read, then durable burn.
 Key `(service_lineage, original_operation_id, X, 1)`; home is the owning response
 transaction's retained release intent/outcome, linked to exact committed R/audit
-and frozen frame bytes. Burn is durable before the one separable write attempt.
-The endpoint includes full frame write under live epoch/deadline enforcement,
-durable committed/held X outcome and all required file/namespace/readback
-barriers, strictly before D. Local burn and socket write are not atomic; remote
-receipt or application admission is not local use durability. Partial/unknown
-write stays burned/held; no exactly-once delivery claim. The still-live executor
-alone may attempt the write; restart or stored-outcome retrieval cannot dispatch
-it again. A new exposure occurrence needs separately reviewed authorization and
-slot semantics, not a fresh H. Every shared crash row applies; after bytes may
-have escaped, failure cannot be reported as proof of no exposure.
+and frozen frame bytes. The exact X ordering is:
+
+1. Durably burn the stable X key under retained admission. A burn is not yet a
+   completed release/use authorization; an ambiguous burn forbids any send.
+2. Commit **`XReleaseCommitted`**, the owning transaction's immutable durable
+   release/use authority. It binds that burned key/revision, exact H/original
+   references, frame bytes/digest/length, peer/connection, original deadline,
+   live epoch, committed R/audit/archive evidence and exact predecessor. Finish
+   every required write, sync, checked close, namespace barrier, readback and
+   independently protected recovery/use binding **before any response byte**.
+   Only this completed local transition supplies release authority; a prepare,
+   R/audit result or burn alone cannot. Any failure/unknown completion holds the
+   scope, preserves the burn and sends nothing. Commit means release-authorized,
+   not delivered.
+3. Only the still-live admitted executor may make its one bounded send attempt,
+   with the full chain/current fence retained. Enforce `f_X_send` and the same
+   original exclusive D/current epoch through the complete authoritative frame;
+   no renewed deadline, extra read or recovery dispatch. The full X endpoint is
+   durable `XReleaseCommitted` followed by this timely actual send. No mandatory
+   authority or recovery durability remains after the frame leaves. Local commit
+   and socket delivery are not atomic; a failed/partial/unknown send retains the
+   committed burn and uncertain delivery, never an unused slot.
+4. Any later delivery accounting is a separate **non-authoritative delivery
+   note**, not release/use completion, required success evidence or another
+   authorization. It cannot overwrite/delete `XReleaseCommitted`, its retained
+   bindings or the burn. Failure or crash of that note's write, sync or readback
+   leaves the prior authority committed and delivery accounting unknown; it
+   never refunds use or permits resend. Its own maintenance budget/protocol is
+   undefined and grants no automatic late job under the expired request.
+
+Recovery retrieves exact committed authority/status only, with delivery unknown
+where necessary; it never re-sends, even if no byte was delivered. A new exposure
+occurrence needs separately reviewed authorization and slot semantics, not a
+fresh H. Every shared crash row applies; a prefix may have escaped after step 2.
+This preserves existing authoritative WS success semantics. If any required
+authority/durability binding cannot precede send, or either bound/current-epoch
+enforcement is unqualified, **X is unavailable** (`handoff_unqualified`); this
+proposal introduces no peer-side deferred-success protocol and does not weaken
+success semantics. The new transaction and send enforcement are not implemented.
 
 ### 6. Enforcement and per-platform qualification
 
 | Platform | Clock/boot, same act and qualification |
 | --- | --- |
-| Linux | One `CLOCK_BOOTTIME` m after complete X admission, protected boot/original D; durable burn → actual full response write → complete durable use/outcome. H:98–107 only builds bytes and H:140–144 has no serving dispatcher. No deadline/epoch-enforcing write+durability primitive, f_X, T_X, epsilon_X, reserve/rate or file-count bound is supplied. `handoff_unqualified`. |
-| macOS | One post-X-admission `mach_continuous_time` m and protected `kern.bootsessionuuid`; checked timebase/original-D conversion. `F_FULLFSYNC` on release intent/outcome plus separately qualified namespace barriers; **same full socket-write and durable X outcome**, not merely file flush or root commit. Native source/representation restrictions below apply. Flush is not a socket deadline/fence; bounds and mechanism missing: `handoff_unqualified`. |
+| Linux | One `CLOCK_BOOTTIME` m after complete X admission, protected boot/original D; durable burn → complete durable/read-back `XReleaseCommitted` → one bounded actual send; any later delivery note is non-authoritative. All required file/namespace/use bindings precede response bytes. H:98–107 only builds bytes and H:140–144 has no serving dispatcher. `f_X_commit`, `f_X_send`, total f_X/T_X/epsilon_X, reserve/rate and workload enforcement are undefined/unqualified. X unavailable: `handoff_unqualified`. |
+| macOS | One post-X-admission `mach_continuous_time` m and protected `kern.bootsessionuuid`; checked timebase/original-D conversion. Checked `F_FULLFSYNC` on burn/release-use files plus separately qualified namespace/readback barriers complete `XReleaseCommitted` **before any response byte**, followed by the same one bounded actual send. Later delivery accounting cannot invalidate the committed authority or authorize resend. Native source/representation restrictions below apply. Flush is not a socket deadline/fence; both component bounds and enforcement missing. X unavailable: `handoff_unqualified`. |
 
 ### 7. Paired controls and composition
 
-`WC1ReleaseEndpoint`: one timely complete frame and durable X outcome versus
-pause after m/burn, blocked/partial write, epoch revocation, lost reply and
-unknown outcome. No late bytes, replay write or success without the endpoint;
-unknown may already have exposed a prefix. Plant release based only on R/audit,
-or omit current epoch/deadline enforcement, and require late/duplicate-exposure
-assertion to fail. Shared controls apply. A received complete X response still
+`WC1ReleaseEndpoint`: complete durable `XReleaseCommitted` precedes every response
+byte, then one timely bounded send, versus failure/unknown burn or any required
+pre-send write/sync/readback (no send), post-commit pause, partial write, epoch
+revocation and lost reply (burn remains, no recovery resend). Plant release on
+R/audit/burn alone or move required use completion after send; the
+no-success-before-durable-authority assertion must fail. Removing current
+epoch/deadline enforcement must fail the late/duplicate-exposure assertion.
+
+`WC1ReleasePostSendAccounting`: on **both Linux and macOS**, pair a complete
+timely frame followed by successful delivery-note accounting with that same
+complete frame followed by write failure, sync failure, readback failure or
+crash of the proposed completion/accounting record. Assert authority/use and all
+required recovery bindings were already durable before the first byte and remain
+unchanged; accounting may be unknown, but the stable key stays burned and reopen
+never re-sends. No client success depends on the failed later record. Plant the
+old send-before-required-use-completion ordering; this paired control must fail
+the durable-authority assertion. These are future native controls, not executed
+platform qualification. Shared controls apply. A received complete X response still
 does not supply registry C/V time or its protected read-completion fact.
 
 ## Window TLS: peer validation and admission
@@ -568,8 +637,9 @@ recovery semantics, not permission for an expired original execution to resume.
 | Before burn | No window act/use write. Retire old preparation. Reprepare only if independent current history proves the same original slot unused and its original constraints still permit it. Missing/torn state is not unused. |
 | Burn write/sync/ack unknown | No act. Retain exact intent and fence. A fresh H cannot resolve uncertainty or skip the slot. |
 | Burn durable, act absent | Keep burn forever for this logical key. No recovery redispatch, even if P bytes, R root, X frame or TLS admission never happened. Availability may be lost. |
-| Partial act or any file/namespace/readback/outcome ambiguity | Preserve exact old/new bytes, use and evidence; hold. P is not prepared, R not acknowledged, X may have exposed a prefix, TLS cannot open application authority. No rollback-to-unused or fabricated completion. |
-| Act appears complete, use/outcome not proven | Not an accepted committed state. Hold each owning scope; readable file/root, sent bytes or a verified peer cannot replace durable linked use. |
+| Partial act or any required authority file/namespace/readback/outcome ambiguity | Preserve exact old/new bytes, use and evidence; hold. P is not prepared, R not acknowledged, TLS cannot open application authority. X sends nothing if required pre-send authority is uncertain; after XReleaseCommitted, delivery may be partial/unknown but that committed burn remains. No rollback-to-unused or fabricated completion. |
+| Act appears complete, required use/authority outcome not proven | Not an accepted committed state. Hold each owning scope; readable file/root, sent bytes or a verified peer cannot replace durable linked use. A full X frame without prior XReleaseCommitted is forbidden, not repairable by later accounting. |
+| X frame delivered, later delivery-note write/sync/readback fails or crashes | Keep prior durable XReleaseCommitted and all required authority/recovery bindings unchanged. Delivery accounting may remain unknown; no authority completion was deferred. Key remains burned and recovery never re-sends, on both OSes. |
 | Full endpoint, acknowledgment lost | Recover exact original outcome/status only. No second prepare/publication/write/admission. An authorized lookup/re-exposure is separately scoped and never resets this burn. |
 | Known late act | Retain burn/evidence and hold. Withheld response or late completion does not repair the forbidden effect or authorize automatic late publication. |
 | Restored consumer use/root, intact provider W (N1) | Independent consumer use/currentness authority must detect rollback; provider W alone cannot. Before burn, a fresh interval may pass time only if history and original unused authority survive; after burn every H refuses. |
@@ -595,6 +665,7 @@ by its named intended assertion, not setup failure or a skipped test.
 | `WC1WindowStaleCapture` | Pause pre-entry past original D; actual final read refuses without burn/act. Same owned bytes timely may pass time only with enforcement. Remove/move m and require stale-admission assertion to fail. |
 | `WC1WindowPostReadPause` | Pause/suspend after timely m or burn past D/revocation; forbid late act, not merely late success. Timely full endpoint commits once. Remove effect enforcement and require native late-effect assertion to fail (`HandoffLateRun`, N2). |
 | `WC1WindowDoubleUse` | Two pure checks of unused v plus competing burns or H2 for a burned key accept at most one act. Distinct independently authorized key is the valid control. Remove predecessor CAS or key by H/run and require duplicate-act assertion to fail. |
+| `WC1WindowTransitionVersion` | The exact protected witness-transition-map:1 pair maps native WC1TimeUse/1 to enrolled WC1TimeUse:1 identically at preparation/expected metadata and encoding, and matches on decode. This is the positive version predicate with otherwise valid input. Literal slash WC1TimeUse/1 in transition_version, wrong WC1TimeUse:2, unknown mapping or preparation/encoding mismatch refuses before bundle/use/act; an alphabet-valid wrong version is still wrong. Plant generic slash replacement or omitted exact version comparison and require mapping/version assertion to fail. |
 | `WC1WindowBindingAndOriginals` | Wrong service/principal/operation/candidate, boot/start/D/mapping, held provider, missing original or excessive ancestry gives no bundle/burn/act. Exact protected bounded originals/read set is the valid control. Plant requester-derived expectations or truncated ancestry and require binding/provenance assertion to fail. |
 | `WC1WindowReserveAndEquality` | Overflow, growing T/reserve, m-s+f+epsilon>T, m+f+epsilon=D or U=A refuses with no burn/act. Nearby representable interior values may pass time predicates. Plant inclusive D/A or refreshed reserve and require strict-bound assertion to fail. No shared illustrative 250 ms value is a WC1 budget. |
 | `WC1WindowN1Recovery` | With J=140, original [199,201] settled to W=201: intact history rejects [170,172] by interval; missing/restored history independently rejects [210,212] by continuity. With complete history [210,212] may pass provider time for a still-unused slot within its original D; after burn it still refuses this key. Plant W reset to J, omitted consumer-use custody or fresh-H slot and require the corresponding interval/continuity/replay assertion to fail. |
@@ -629,9 +700,9 @@ consumer witness record gains a field here.
 
 | Unresolved input | Responsible decision and closed behavior |
 | --- | --- |
-| T/f/epsilon/reserve/rate for P/R/X/TLS; maximum complete files/work | Platform/storage/transport and time owners must supply finite workload-specific qualifications and an enforcing act/fence. All are undefined or unqualified; `handoff_unqualified`. 5 s/3 s/1 s limits are specified policy, not proof of residual f or uncertainty coverage. |
+| T/f/epsilon/reserve/rate for P/R/X/TLS; maximum complete files/work | Platform/storage/transport and time owners must supply finite workload-specific qualifications and an enforcing act/fence, including separate f_X_commit and f_X_send inside X's original budget. All are undefined or unqualified; `handoff_unqualified`. 5 s/3 s/1 s limits are specified policy, not proof of residual f or uncertainty coverage. |
 | Standalone audit, recovery/root, offline/output/re-exposure and startup budgets | Owning operation must specify original finite start/D and authorization; undefined refuses. Neither approval lifetime nor an expired online deadline supplies one. |
-| Native codecs and four WC1TimeUse/1 homes | Contract/consumer owners review bytes, frozen-content/completion binding, genesis/migration, capacity, exact outcomes and per-window recovery before any G16 codec. New connection and response owning transactions do not exist today. Separate use ledger needs explicit owner approval. |
+| Native codecs and four WC1TimeUse/1 homes | Contract/consumer owners review bytes, the protected witness-transition-map:1 mapping to enrolled WC1TimeUse:1, frozen-content/completion binding, genesis/migration, capacity, exact outcomes and per-window recovery before any G16 codec. XReleaseCommitted must contain all required authority/recovery durability before send, independent of later accounting; new connection/response transactions do not exist today. Separate use ledger needs explicit owner approval. |
 | Original-reader/provider/witness and entropy | Select qualified installed source graph, independent confirmed history, live custody/invalidation and post-restore challenge/incarnation provenance. Broker interfaces and TLS Consume alone supply none. No circular dependency on WC1 to qualify WC1 time. |
 | Darwin receipt and native parity | Joint provider/platform/consumer review of continuous-domain receipt version, boot/deadline mapping, native lifecycle/exclusion and file/device/namespace/act qualification for every row. No Linux receipt relabel or presumed macOS provider. |
 | G17/G18 and use rollback custody | Owner selects independent exact custody/fresh-read provider, retention and whole-call SLA plus whole-lifetime old/delegated-executor enforcement. Consumer completion/use and audit authority require explicit scopes; existing closed record tuples do not settle them. |
