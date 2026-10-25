@@ -39,6 +39,7 @@ published tree. Host scheduling policy is external to this portable Makefile.
 
 | Tool | Purpose / exact entry point | Outputs and limits |
 | --- | --- | --- |
+| GitHub Actions | `.github/workflows/linux-ci.yml` runs on pull requests and pushes to main with Ubuntu 26.04 and Go 1.26.0: `go mod download`, `go mod verify`, `go mod tidy -diff`, `go build ./...`, `go vet ./...`, `bash -eo pipefail .github/scripts/check-format.sh`, `go run ./tools/hygiene -check`, `go run ./tools/vectors -check`, `go test -mod=readonly ./internal/deppolicy -count=1 -timeout=1m -v`, `python3 .github/scripts/check-hygiene.py`, `bash -eo pipefail .github/scripts/check-controls.sh`, `go test -mod=readonly ./... -count=1 -timeout=1m -v` | Actions logs and private temporary fixtures. Full checkout history is retained. The formatting gate preserves parser failures; isolated controls require stale-checksum, vet, formatting and four generic attribution refusals, including broken Windows-only syntax. Full tests have a one-minute per-package timeout and a ten-minute job limit; no privileged service qualification is claimed. |
 | Wire tests | `make test-wire` | Console output; exact codec scope only. |
 | Bootstrap tests | `make test` | Named bootstrap package tests, 30-second timeout; console output. Full suites belong to review. |
 | Vet | `make vet` | Bootstrap/tool diagnostics on console. |
