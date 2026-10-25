@@ -24,6 +24,7 @@ there is no S3 storage implementation to cite as a qualified mechanism.
 | Schema | [Broker seven-group schema](https://github.com/relux-works/swarma-credential-broker/blob/7294b7aea68a8e0757437075efa3a6e318a18e51/docs/time-window-profile.md), especially lines 15–89 |
 | Handoff | [Broker handoff, including N1–N3 and named controls](https://github.com/relux-works/swarma-credential-broker/blob/7294b7aea68a8e0757437075efa3a6e318a18e51/docs/time-handoff.md) |
 | Mac | [Mandatory macOS binding](https://github.com/relux-works/swarma-credential-broker/blob/7294b7aea68a8e0757437075efa3a6e318a18e51/docs/time-handoff-macos.md) |
+| API mapping | [Broker Run/Epoch and native-operation mapping](https://github.com/relux-works/swarma-credential-broker/blob/b38aeda82fb563503960836c771bcc94e8103810/docs/time-handoff-api.md), especially lines 85–102; mapping reference only, no dependency or activation change |
 | WS | [Conditional service contract](https://github.com/relux-works/swarma-keymaker/blob/b232f6aec52e9327daffd8e889b52ed0ebd2fd3f/spec/witness-service.md), especially lines 181–243, 473–544 and 598–616 |
 | H | [S2 transport predicates](https://github.com/relux-works/swarma-witness/blob/c18d70040d11a6a03078df1e61c1bf3aa0dae85a/transport/handler.go) |
 | TLS | [S2 qualified-time interface and TLS predicates](https://github.com/relux-works/swarma-witness/blob/c18d70040d11a6a03078df1e61c1bf3aa0dae85a/transport/tls.go) |
@@ -145,6 +146,13 @@ Reservation acquisition and all provider, witness, original-reader, archive,
 custodian and signer work precede final admission. No RPC or lock upgrade under
 terminal gates. Stop acquires none of these gates and waits on no indirect holder.
 
+`VerifyWindow` itself is pure: no clock, file or network I/O. Under the terminal
+gates, allow exactly the one fixed qualified read m outside `VerifyWindow`, plus
+the bounded local burn, act and durability steps of that window. Forbid any extra
+clock read and any external provider, original-reader, signing, custodian or
+archive work under those gates. The permitted local act includes X's specified
+response write; it does not permit external qualification or custody work.
+
 Under the named full final chain, complete initial persistence **and** consuming
 use/CAS admission; select exact current protected head, epoch and unused revision
 before m. Even nonwaiting initial admission after m is forbidden. Then capture
@@ -168,6 +176,17 @@ H. Propose retaining exact H/envelope reference and authenticated original
 closure references in use-owned metadata linked to the frozen content; no H is
 required inside that content or any closed WS wire object. Those references
 must be bounded, retained and independently authenticated, not just hashed.
+
+The future native transition retains the exact stable logical tuple below
+alongside the broker `Operation` digest binding the live epoch and native read
+set. Broker `Run` is a private per-attempt nonce; `Epoch` is the independently
+enrolled live-writer fence, compared separately with the locked epoch (API
+mapping:85–102). Re-derive `Operation` from protected locked state before m and
+compare the full native predecessor and unused revision at consumption. A changed
+`Operation` digest after replacement or a read-set change is never a new unused
+WC1 slot; an API `UseKey` containing that digest cannot replace the stable tuple
+and retained burns. This is a future codec/adapter obligation, not an accepting
+mapping or a change to any closed provider/WS record.
 
 For each key below, compare exact predecessor and independently proven
 `unused(v)` under the final chain. `unused(v) -> burned(v+1, exact intent)` is
@@ -581,7 +600,7 @@ by its named intended assertion, not setup failure or a skipped test.
 | `WC1WindowN1Recovery` | With J=140, original [199,201] settled to W=201: intact history rejects [170,172] by interval; missing/restored history independently rejects [210,212] by continuity. With complete history [210,212] may pass provider time for a still-unused slot within its original D; after burn it still refuses this key. Plant W reset to J, omitted consumer-use custody or fresh-H slot and require the corresponding interval/continuity/replay assertion to fail. |
 | `WC1WindowCrashOutcome` | Exercise every owning crash row; unknown/restore/lost ack never refunds W/use or redispatches. Exact durable outcome retrieval is the positive, not another act. Plant missing retained burn/outcome linkage and require restart-replay assertion to fail. |
 | `WC1WindowNativeParity` | Awake-only clock, boot/domain substitution, overflow, unsupported full flush, unknown namespace recovery or suspend through D never qualifies. Native timely continuous-clock/full-endpoint fixture is the control. Plant uptime substitution/ignored directory barrier and require suspend/crash-durability assertion to fail (`HandoffMacParity`). |
-| `WC1WindowPurityAndStop` | No clock/callback/provider/signing/I/O under pure check or terminal gates; no stop waiting on a provider/storage holder or dependency cycle. Valid prepared-only check/independent stop is the control. Plant provider call under L or stop dependency and require structural/stop assertion to fail. |
+| `WC1WindowPurityAndStop` | `VerifyWindow` itself is pure: no clock, file or network I/O, callback, provider or signing work. Under the terminal gates, allow exactly the one fixed qualified read m outside `VerifyWindow`, plus the bounded local burn, act and durability steps of that window. Forbid any extra clock read and any external provider, original-reader, signing, custodian or archive work under those gates. Stop must not wait on these gates, a provider/storage holder or a dependency cycle. Positive control: complete all final exclusions and initial persistence/use-CAS admission, select the exact current head/epoch/unused revision, take sole m outside the pure verifier, run the pure check, durably burn, perform the bounded local act and every durability/readback/outcome barrier, and reach the full endpoint strictly before original D while admission remains held and stop remains independent. Preserve original T/f/epsilon/reserve; this trace requires qualified enforcement, not merely favorable arithmetic. Negative controls insert an extra clock read, external provider/original-reader/signing/custodian/archive work under the gates, or any clock/I/O inside `VerifyWindow`; each must fail its named purity/gate assertion before burn/act. Plant the former blanket terminal clock/I/O ban and require the complete positive trace to fail; plant an extra read, external provider call under L or stop dependency and require the corresponding structural/stop assertion to fail. |
 | `WC1WindowBridgeBudget` | Retry/page/R/X/reconnect cannot refresh the original operation D or reuse another window's evidence/reserve; WC1 H cannot authorize registry C/V/F. Timely distinct windows within original local budgets are the control. Plant per-phase timeout reset or shared H and require deadline/isolation assertion to fail. |
 
 ## Registry bridge composition and remaining inputs
