@@ -20,7 +20,7 @@ its synthetic storage-codec data is not authenticated time evidence.
 | Window | Native binding and adapter | Named checks | Narrowing mutants |
 | --- | --- | --- | --- |
 | P | Read set inside native operation plus retained exact snapshot; PAdapter | TestWindowTimelyEndpoint, TestWindowStaleAndPostReadPause, TestWindowDoubleCheckAndExtraRead, TestWindowNativeReadSetAndEpoch, TestWindowStableKey, TestWindowOriginalsAndBinding, TestWindowTransitionMapping | G16_CAPTURE_BEFORE_ADMISSION, G16_SECOND_READ, G16_BURN_AFTER_ACT, G16_H_AS_KEY, G16_EPOCH_EQUALS_RUN |
-| R | Read set inside native operation plus retained exact snapshot; RAdapter | Same named parameterized checks with R subcases | Same five mutants plus G16_LATE_AUTHORITY_COMMIT |
+| R | Read set inside native operation plus retained exact snapshot; RAdapter | Same named parameterized checks with R subcases | Same five mutants |
 | X | Read set inside native operation plus retained exact snapshot; XAdapter | Same named X subcases; TestXPostSendAccountingFailure, TestWindowLateCommitForbidden, TestWindowPostCommitPause | Same five plus G16_X_SEND_BEFORE_COMMIT, G16_LATE_AUTHORITY_COMMIT |
 | TLS | Unchanged native TLS digest; separately retained/compared snapshot before m; TLSAdapter | Same named TLS subcases, including equality with transport.ConsumerOperationDigest; TestWindowLateCommitForbidden, TestWindowPostCommitPause | Same five mutants plus G16_LATE_AUTHORITY_COMMIT |
 
