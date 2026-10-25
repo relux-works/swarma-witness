@@ -59,5 +59,7 @@ jobs:
         run: bash --noprofile --norc -eo pipefail .github/scripts/report-pending.sh
       - name: Verify pending reporter controls
         run: bash --noprofile --norc -eo pipefail .github/scripts/check-pending-controls.sh
+      - name: Verify S3 transaction controls
+        run: python3 .github/scripts/check-s3-controls.py
       - name: Test
         run: go test -mod=readonly ./... -count=1 -timeout=1m -v

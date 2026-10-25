@@ -1,17 +1,22 @@
 # Swarma witness
 
-Canonical wire, signature and pure policy/transport libraries for an append-only state-witness service.
-The server is not implemented, deployed or qualified. Consumers remain in honest mode A until the
+Canonical wire, signature, policy/transport and unserved transaction libraries for an append-only state-witness service.
+The server is not served, deployed or qualified. Consumers remain in honest mode A until the
 applicable witness and consumer activation gates close. This repository opens no
-listener and provides no append/latest, signer custody or recovery authority.
+listener and provides no production append/latest, signer custody or recovery authority.
 The [codec contract](spec/wire-v1.md) describes `wire`, `records` and `evidence`:
 closed bindings/carriers, strict Keymaker record verification, bounded signed
 receipt/head/control construction and proof-page checks. Signer callbacks are
 supplied by callers; no production signer is implemented.
 The [S2 policy contract](spec/policy-v1.md) adds protected role/consent/admin
 validation and unserved transport predicates. G07 disclosure and G10 custody
-gates stay closed with no configuration override. Durable replay/grants and
-activation remain S3/S4; record-key rotation remains unavailable.
+gates stay closed with no configuration override. Record-key rotation remains unavailable.
+The [S3 local contract](spec/storage-v1.md) adds immutable segments/journals,
+one atomic root, original-receipt retry, a global audit chain and typed archive
+interfaces. Its coordinator has no accepting production constructor. Independent
+custodian/archive, time, exclusion, genesis/recovery and deployment qualification
+remain closed. Synthetic providers live only in tests; injected file-call faults
+prove ordering and refusal paths, never power-loss safety.
 
 The conditional contract is the [witness-service specification](https://github.com/relux-works/swarma-keymaker/blob/7a2262ce2b8b84b9e9bc627972d4e07d62d34270/spec/witness-service.md),
 with the separate [Keymaker consumer contract](https://github.com/relux-works/swarma-keymaker/blob/7a2262ce2b8b84b9e9bc627972d4e07d62d34270/spec/keymaker-witness.md).
@@ -19,7 +24,8 @@ The implementation will require exact LF-inclusive record acknowledgements,
 compare-head append, challenge-bound authoritative latest reads, complete bounded
 continuity proofs, independent durable custody and explicit role separation.
 Unknown outcomes must retain evidence and fence; there is no weaker fallback.
-None of those service properties is established by these libraries.
+Local codec and injected transaction checks establish only their documented scope;
+none establishes a qualified serving instance.
 
 Go 1.26.x is required. Strict crypto helpers use reviewed Waggle S5
 `5f4e7435d75697385ff6ce15a7501ac6f31c8ea5`
@@ -43,8 +49,9 @@ published tree. Host scheduling policy is external to this portable Makefile.
 
 | Tool | Purpose / exact entry point | Outputs and limits |
 | --- | --- | --- |
-| GitHub Actions | `.github/workflows/linux-ci.yml` runs on pull requests and pushes to main with Ubuntu 26.04 and Go 1.26.0: `go mod download`, `go mod verify`, `go mod tidy -diff`, `go build ./...`, `go vet ./...`, `bash -eo pipefail .github/scripts/check-format.sh`, `go run ./tools/hygiene -check`, `go run ./tools/vectors -check`, `go test -mod=readonly ./internal/deppolicy -count=1 -timeout=1m -v`, `python3 .github/scripts/check-hygiene.py`, `bash -eo pipefail .github/scripts/check-controls.sh`, `go test -mod=readonly ./... -count=1 -timeout=1m -v` | Actions logs and private temporary fixtures. Full checkout history is retained. The formatting gate preserves parser failures; isolated controls require stale-checksum, vet, formatting and four generic attribution refusals, including broken Windows-only syntax. Full tests have a one-minute per-package timeout and a ten-minute job limit; no privileged service qualification is claimed. |
+| GitHub Actions | `.github/workflows/linux-ci.yml` runs on pull requests and pushes to main with Ubuntu 26.04 and Go 1.26.0: `go mod download`, `go mod verify`, `go mod tidy -diff`, `go build ./...`, `go vet ./...`, `bash -eo pipefail .github/scripts/check-format.sh`, `go run ./tools/hygiene -check`, `go run ./tools/vectors -check`, `go test -mod=readonly ./internal/deppolicy -count=1 -timeout=1m -v`, `python3 .github/scripts/check-hygiene.py`, `bash -eo pipefail .github/scripts/check-controls.sh`, `python3 .github/scripts/check-s3-controls.py`, `go test -mod=readonly ./... -count=1 -timeout=1m -v` | Actions logs and private temporary fixtures. Full checkout history is retained. The formatting gate preserves parser failures; isolated controls require stale-checksum, vet, formatting and four generic attribution refusals, including broken Windows-only syntax. Full tests have a one-minute per-package timeout and a ten-minute job limit; no privileged service qualification is claimed. |
 | PENDING inventory | `bash -eo pipefail .github/scripts/report-pending.sh`; `bash -eo pipefail .github/scripts/check-pending-controls.sh` | CI discovers and lists documentation specifications from `pending-inventories.txt`, requires every `pending-rows.txt` lower-bound row, and refuses empty discovery. New specifications appear dynamically. Controls use isolated private fixtures; no qualification test bodies are executed or claimed passing. |
+| Storage tests and mutation controls | `make test-storage`; `python3 .github/scripts/check-s3-controls.py` | Named transaction/codec checks and eleven assertion-bound overlay mutations; private temporary files and console logs. [Coverage and PENDING qualification](spec/storage-tests.md). Bounded CAS/exact-retry race command is documented there. |
 | Policy tests | `make test-policy` | Named narrow policy/config/transport checks; [pending dependencies](spec/policy-tests.md) remain explicit. |
 | Wire tests | `make test-wire` | Console output; exact codec scope only. |
 | Bootstrap tests | `make test` | Named bootstrap package tests, 30-second timeout; console output. Full suites belong to review. |
@@ -88,4 +95,4 @@ provider/SLA remain open. See [unresolved questions](UNRESOLVED_QUESTIONS.md).
 The S1 negative-first tests and six narrowing controls are documented in the
 [codec checks](spec/wire-tests.md). Frozen [first-party data](testdata/witness-v1/README.md)
 contains no third-party fixtures. Authenticated registrar append, checkpoint verification,
-production transport authorization and all storage/service slices remain unavailable.
+production transport authorization, qualified storage/recovery and serving remain unavailable.

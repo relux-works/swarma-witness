@@ -18,9 +18,9 @@ linked from README; newer accepted consumer decisions need joint reconciliation.
 | G10 | Owner and contract review | Decide separate key custody, initial pins, rotation and lost-key continuity. |
 | G11 | Owner and contract review | Pure pinned mTLS/certificate/interval/revocation predicates; proposed digest preimages require confirmation. Production provider, native adapter, CA/reload and handoff remain unqualified. |
 | G12 | Contract review | Transport-independent carriers, correlation and byte accounting accepted/implemented. Pure HTTP framing, budget/rate predicates and close-versus-code checks implemented; streaming admission, cancellation and runtime qualification stay open. |
-| G13 | Owner and contract review | Review transaction format and qualify actual filesystem durability/protection. |
-| G14 | Owner and contract review | Define immutable archive, retrieval and authorized offline continuity. Never discard acknowledged evidence. |
-| G15 | Contract review | Define independent audit order, lock order, reserve, exhaustion and archive acknowledgements. |
+| G13 | Owner and contract review | Local immutable codecs, full file/namespace ordering and atomic root implemented with injected-call tests. Review exact local v1 layout; qualify real device/power-loss durability, protected mount/owner layout and hard reserve. See spec/storage-v1.md. |
+| G14 | Owner and contract review | Typed consumer archive interfaces and closed defaults implemented. Provider protocol, independent retention/retrieval, one-use offline approval and fresh-head advancement qualification remain open. Never discard acknowledged evidence. |
+| G15 | Contract review | Single local audit/root chain, lock graph, reserve/exhaustion, restricted typed reader rules and independent archive interface implemented. Global reader installation/disclosure and real archive acknowledgement authority remain open. |
 | G16 | Owner and contract review | Fix qualified clock/entropy interfaces, suspend/restore behavior and audit null-time success semantics. |
 | G17 | Owner and contract review | Custodian provider/SLA and typed protocol remain open. No on-node, periodic-only or absent-provider authority fallback. |
 | G18 | Owner and contract review | Qualify lifetime exclusion of older serving instances; local locks and append CAS are insufficient. |

@@ -9,3 +9,8 @@ spec/policy-tests.md TestTLSRevocationReloadCancelsSessions
 spec/policy-tests.md TestTransportStreamingBoundsAndNoLateEffects
 spec/policy-tests.md TestProvisionOwnerDisclosureApproval
 spec/policy-tests.md TestAdminQualifiedCustodyAndInitialPins
+spec/storage-tests.md TestStorageCustodianFreshnessAndSLA
+spec/storage-tests.md TestStorageLifetimeExclusion
+spec/storage-tests.md TestStorageExactRecoveryAndGenesis
+spec/storage-tests.md TestStorageQualifiedTimeWindows
+spec/storage-tests.md TestStorageDeviceAndArchiveRetention
