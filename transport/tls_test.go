@@ -268,7 +268,7 @@ func handshake(t *testing.T, client, server tlsFixture, badPin bool) {
 		t.Fatalf("mutual handshake: client=%v server=%v", ce, se)
 	}
 	for _, state := range []tls.ConnectionState{s.ConnectionState(), c.ConnectionState()} {
-		if state.Version != tls.VersionTLS13 || state.NegotiatedProtocol != "http/1.1" || state.DidResume {
+		if state.Version != tls.VersionTLS13 || state.NegotiatedProtocol != "http/1.1" || state.DidResume || (state.CurveID != tls.X25519 && state.CurveID != tls.CurveP256) || (state.CipherSuite != tls.TLS_AES_128_GCM_SHA256 && state.CipherSuite != tls.TLS_AES_256_GCM_SHA384 && state.CipherSuite != tls.TLS_CHACHA20_POLY1305_SHA256) {
 			t.Fatal("TLS negotiation weakened")
 		}
 	}

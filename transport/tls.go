@@ -14,7 +14,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"math/big"
-	"sort"
 	"time"
 
 	"github.com/relux-works/swarma-witness/records"
@@ -59,15 +58,13 @@ func ChainDigest(chain [][]byte) (string, error) {
 	}
 	return hashDomain("state-witness-tls-chain/1", raw), nil
 }
-func sortedSet(a []string) ([]any, error) {
+func strictSet(a []string) ([]any, error) {
 	if len(a) == 0 || len(a) > 8 {
 		return nil, wire.Refuse("evidence_invalid")
 	}
-	b := append([]string(nil), a...)
-	sort.Strings(b)
-	out := make([]any, len(b))
-	for i, s := range b {
-		if !wire.Digest(s) || i > 0 && b[i-1] == s {
+	out := make([]any, len(a))
+	for i, s := range a {
+		if !wire.Digest(s) || i > 0 && a[i-1] >= s {
 			return nil, wire.Refuse("evidence_invalid")
 		}
 		out[i] = s
@@ -78,7 +75,7 @@ func TrustSetDigest(c TLSContext) (string, error) {
 	if !wire.Name(c.Service) || !wire.Opaque(c.PrincipalID) || c.Generation < 1 || c.Generation > wire.MaxInt || c.Role != "server" && c.Role != "client" {
 		return "", wire.Refuse("evidence_invalid")
 	}
-	pins, e := sortedSet(c.Pins)
+	pins, e := strictSet(c.Pins)
 	if e != nil {
 		return "", e
 	}
@@ -99,11 +96,11 @@ func TrustSetDigest(c TLSContext) (string, error) {
 		}
 		crls = append(crls, records.Digest(r.Raw))
 	}
-	ca, e := sortedSet(roots)
+	ca, e := strictSet(roots)
 	if e != nil {
 		return "", e
 	}
-	rev, e := sortedSet(crls)
+	rev, e := strictSet(crls)
 	if e != nil {
 		return "", e
 	}
@@ -371,7 +368,7 @@ func validCRL(c TLSContext, issuer, cert *x509.Certificate, l, u time.Time) bool
 			return false
 		}
 		for _, ext := range crl.Extensions {
-			if ext.Critical {
+			if ext.Critical || !fullCRLExtension(ext.Id) {
 				return false
 			}
 		}
@@ -380,13 +377,31 @@ func validCRL(c TLSContext, issuer, cert *x509.Certificate, l, u time.Time) bool
 				return false
 			}
 			for _, ext := range entry.Extensions {
-				if ext.Critical {
+				if ext.Critical || !fullCRLEntryExtension(ext.Id) {
 					return false
 				}
+			}
+			// removeFromCRL is delta-only; unassigned/out-of-range reason codes
+			// cannot broaden this full/direct profile either.
+			if entry.ReasonCode < 0 || entry.ReasonCode == 7 || entry.ReasonCode == 8 || entry.ReasonCode > 10 {
+				return false
 			}
 		}
 	}
 	return matched
+}
+
+// Only authorityKeyIdentifier and cRLNumber are supported on a full direct
+// CRL. Delta indicators, issuingDistributionPoint (including indirect/scoped
+// lists), freshestCRL and unknown extensions refuse even when noncritical.
+func fullCRLExtension(oid asn1.ObjectIdentifier) bool {
+	return oid.Equal(asn1.ObjectIdentifier{2, 5, 29, 35}) || oid.Equal(asn1.ObjectIdentifier{2, 5, 29, 20})
+}
+
+// Full/direct entries can describe a reason or invalidity date, but cannot
+// change issuer through certificateIssuer, regardless of the critical flag.
+func fullCRLEntryExtension(oid asn1.ObjectIdentifier) bool {
+	return oid.Equal(asn1.ObjectIdentifier{2, 5, 29, 21}) || oid.Equal(asn1.ObjectIdentifier{2, 5, 29, 24})
 }
 
 // TLSConfig supplies no default x509 clock/trust fallback. VerifyConnection
@@ -401,6 +416,11 @@ func TLSConfig(c TLSContext, source QualifiedTime) *tls.Config {
 				return freezeErr
 			}
 			if state.Version != tls.VersionTLS13 || state.NegotiatedProtocol != "http/1.1" || state.DidResume {
+				return wire.Refuse("not_authorized")
+			}
+			allowedSuite := state.CipherSuite == tls.TLS_AES_128_GCM_SHA256 || state.CipherSuite == tls.TLS_AES_256_GCM_SHA384 || state.CipherSuite == tls.TLS_CHACHA20_POLY1305_SHA256
+			allowedCurve := state.CurveID == tls.X25519 || state.CurveID == tls.CurveP256
+			if !allowedSuite || !allowedCurve {
 				return wire.Refuse("not_authorized")
 			}
 			id, challenge := make([]byte, 16), make([]byte, 16)
