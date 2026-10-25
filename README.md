@@ -17,6 +17,9 @@ interfaces. Its coordinator has no accepting production constructor. Independent
 custodian/archive, time, exclusion, genesis/recovery and deployment qualification
 remain closed. Synthetic providers live only in tests; injected file-call faults
 prove ordering and refusal paths, never power-loss safety.
+The proposed [WC1 QT-2c window profiles](spec/witness-qt2c-profile.md) specify
+prepare/audit, root publication, response release and TLS use transitions;
+all remain unimplemented and unqualified on Linux and macOS.
 
 The conditional contract is the [witness-service specification](https://github.com/relux-works/swarma-keymaker/blob/7a2262ce2b8b84b9e9bc627972d4e07d62d34270/spec/witness-service.md),
 with the separate [Keymaker consumer contract](https://github.com/relux-works/swarma-keymaker/blob/7a2262ce2b8b84b9e9bc627972d4e07d62d34270/spec/keymaker-witness.md).
