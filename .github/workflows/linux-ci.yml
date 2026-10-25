@@ -55,5 +55,9 @@ jobs:
         run: python3 .github/scripts/check-hygiene.py
       - name: Verify CI controls
         run: bash --noprofile --norc -eo pipefail .github/scripts/check-controls.sh
+      - name: Report pending qualification specifications
+        run: bash --noprofile --norc -eo pipefail .github/scripts/report-pending.sh
+      - name: Verify pending reporter controls
+        run: bash --noprofile --norc -eo pipefail .github/scripts/check-pending-controls.sh
       - name: Test
         run: go test -mod=readonly ./... -count=1 -timeout=1m -v

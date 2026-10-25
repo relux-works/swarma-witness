@@ -36,7 +36,7 @@ func (s Snapshot) Validate() error {
 					} else if p.Role != Writer {
 						return wire.Refuse("evidence_invalid")
 					}
-				} else if p.Role != Reader && p.Role != Writer && p.Role != Bridge {
+				} else if p.Role != Reader && p.Role != Writer && p.Role != Bridge && !(p.Role == Observer && b.Consumer() == "owner-registry") {
 					return wire.Refuse("evidence_invalid")
 				}
 			}
@@ -115,9 +115,6 @@ func (s Snapshot) Authorize(peer Peer, method, stream string) error {
 						}
 					}
 				}
-			}
-			if p.Role == Observer && b.Consumer() == "owner-registry" {
-				return nil
 			}
 		}
 	}

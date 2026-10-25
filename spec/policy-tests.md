@@ -1,6 +1,6 @@
 # S2 validation and remaining qualification
 
-Run `go test ./policy ./config ./transport -run 'Test(ACL|Provision|Admin|Rotation|TLS)' -count=1`,
+Run `go test ./policy ./config ./transport -run 'Test(ACL|Provision|Admin|Rotation|Review)' -count=1`,
 `go build ./...`, `go vet ./...`, formatting, module tidiness, hygiene, vectors and
 dependency policy. These tests use synthetic roots/facts only. Existing reviewer
 and S1 tests retain their names and sources. No full service suite or deployment
@@ -12,18 +12,28 @@ qualification is implied.
 | TestProvisionRequiresConsentAndExactBootstrap | Signed consent/exact grant required; empty state grants nothing | M02_INFER_BOOTSTRAP_FROM_EMPTY |
 | TestAdminRejectsReplayAndRoleOverlap | Changed action-ID reuse refuses; exact action retains original result | M02_IGNORE_ADMIN_ACTION_REUSE |
 | TestRotationPreservesHistoricalAuthority | Current writer only; unchanged key/epoch and exact original historical receipt; changed key refuses despite valid signatures | M02_REAUTHORIZE_OLD_WRITER; M02_ALLOW_RECORD_KEY_ROTATION |
-| TestTLSRejectsUnpinnedAndWrongRoleKeys | Path+pin+role+interval/CRL predicates jointly required | M02_ACCEPT_UNPINNED_TLS |
+| TestReviewObserverScope | Observer reads only explicitly provisioned stream and pin; a second stream remains undisclosed | RW1_OBSERVER_ALL_STREAMS; RW1_OBSERVER_IGNORE_PIN |
+| TestReviewProspectiveSigningRoles | New record/witness keys cannot reuse the admin signing key; refusals return no plan | RW1_ADMIN_AS_NEW_RECORD; RW1_ADMIN_AS_NEW_WITNESS |
+| TestReviewHTTPInteriorControl | Ordinary ASCII and edge OWS pass; interior HTAB closes without frame | RW1_ALLOW_INTERIOR_HTAB |
 | TestProvisionG07RemainsClosed | Valid config cannot open disclosure approval | M02_OPEN_G07_GATE |
 
 Other named controls include TestAdminG10RemainsClosed,
 TestRotationPossessionEvidenceBound, TestACLTransportFramingAndBudgets,
-TestACLTransportAuthorizesBeforeInnerEvidence, TestACLRateBudgetControls,
-TestTLSRefusesWithoutQualifiedTime, TestTLSMutualHandshake,
-TestTLSRejectsUnknownSAN and TestTLSProposedPreimageVectors. Mutants are isolated
-source overlays, not runtime switches. A kill requires the named test's intended
+TestACLTransportAuthorizesBeforeInnerEvidence, TestACLRateBudgetControls
+and the reviewer regression names above. The four original policy plan rows
+and seven original non-TLS mutants belong to this policy/HTTP slice. TLS tests,
+`M02_ACCEPT_UNPINNED_TLS` and all proposed G11 codec evidence belong only to the
+separate G11 commit and are not claimed as policy-slice execution evidence.
+Mutants are isolated source overlays, not runtime switches. A kill requires the named test's intended
 assertion, not a compiler/setup failure. Unassigned controls have no claimed
-mutation coverage. The time source in tests models verified/consumed facts;
-passing it does not qualify a provider, complete receipt verifier or live handoff.
+mutation coverage. Future qualified-time test sources model verified/consumed
+facts only; passing them cannot qualify a provider, complete receipt verifier or live handoff.
+
+CI runs `.github/scripts/report-pending.sh` to discover these documentation rows
+and compare them against the independent `pending-rows.txt` lower bound. It reports
+new rows automatically and fails on removed rows or empty discovery. The isolated
+`check-pending-controls.sh` fixtures check those refusals with no partial report;
+reporter success is inventory evidence only.
 
 The following are **PENDING test specifications**, not executable green tests or
 skipped test bodies. They must be implemented with their dependency; no t.Skip or

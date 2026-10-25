@@ -1,0 +1,2 @@
+# Documentation inventory|full test-specification name pattern
+spec/policy-tests.md|Test[A-Za-z0-9_]+

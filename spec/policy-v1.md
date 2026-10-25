@@ -11,9 +11,18 @@ reader, admin, publisher, bridge or observer. Config carries public values only;
 there is no key/path/URL lookup or gate override. IDs and pins cannot cross
 principal roles. Writers may be explicitly listed as readers. Registry publishers
 never acquire bridge, append or administrative authority. The independent bridge
-writes only its bound checkpoint stream; observers read checkpoint streams only.
+writes only its bound checkpoint stream; observers read only checkpoint streams that explicitly list their principal ID
+and exact transport pin as a reader. Observer role alone grants no stream access.
 An unbound peer receives `not_authorized` for foreign and nonexistent streams
 before inner evidence or page lookup. No lookup is performed by these functions.
+
+S2 validates witness-local principal IDs, transport pins and stream roles only.
+It does not establish which OS account or process controls a credential, inventory
+credentials held elsewhere, or qualify witness or custodian isolation. Before
+registry activation, independently verify that the registry writer cannot reach
+any witness append credential, that the bridge has no content authority, and
+that the custodian has no registry or witness account access. Local role checks
+and synthetic tests do not establish these custody or isolation properties.
 
 G07 disclosure approval and G10 custody are unconditional closed gates,
 `stream_unavailable` and `profile_unavailable` respectively. Valid config cannot
@@ -32,7 +41,10 @@ member is added. Input grants model reservation and exact retry equality only;
 S3/S4 must provide durable single consumption and original-receipt retention.
 
 `ValidateAdmin` checks protected administrative transport, existing S1 signed
-schema, role/key separation, action bytes/replay and snapshot CAS. A retained
+schema, complete current/prospective local signing-role separation, action
+bytes/replay and snapshot CAS. Newly provisioned record keys and rotated witness
+keys are checked against administrator, consumer, registry-root and supplied
+approval/enrollment authorities before a plan is returned. A retained
 exact completed action returns a copy of its original result even across current
 CAS changes; changed bytes under its ID refuse `position_conflict`. A pending
 result, unresolved intent or uncertain barrier refuses `outcome_unknown`.

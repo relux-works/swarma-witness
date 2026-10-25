@@ -83,7 +83,7 @@ func TestACLRejectsCrossStreamAndRegistryWriter(t *testing.T) {
 	wantCode(t, s.Authorize(peer("publisher"), "admin", ""), "not_authorized")
 	// A genuine bridge and observer have only an independently bound checkpoint stream.
 	pub, _ := key(t, records.Writer)
-	reg := map[string]any{"service": "svc", "stream": "registry", "consumer": "owner-registry", "identity": map[string]any{"registry_id": pub.Public, "owner": "owner"}, "lineage": "r", "profile": "owner-registry-checkpoint/1", "writer_epoch": int64(1), "writer_id": "bridge", "record_key": nil, "transport_pins": []any{peer("bridge").Pin}, "readers": []any{}}
+	reg := map[string]any{"service": "svc", "stream": "registry", "consumer": "owner-registry", "identity": map[string]any{"registry_id": pub.Public, "owner": "owner"}, "lineage": "r", "profile": "owner-registry-checkpoint/1", "writer_epoch": int64(1), "writer_id": "bridge", "record_key": nil, "transport_pins": []any{peer("bridge").Pin}, "readers": []any{map[string]any{"id": "observer", "transport_pins": []any{peer("observer").Pin}}}}
 	s.Bindings = append(s.Bindings, binding(t, reg))
 	wantCode(t, s.Authorize(peer("bridge"), "append", "registry"), "")
 	wantCode(t, s.Authorize(peer("observer"), "latest", "registry"), "")

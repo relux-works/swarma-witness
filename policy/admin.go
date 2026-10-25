@@ -60,15 +60,6 @@ func ValidateAdmin(s Snapshot, peer Peer, line []byte, admin records.Key, c Cont
 	if e != nil {
 		return Plan{}, e
 	}
-	for _, b := range s.Bindings {
-		pub, _, _ := b.RecordKey()
-		if pub != "" && pub == admin.Public {
-			return Plan{}, wire.Refuse("evidence_invalid")
-		}
-	}
-	if c.CurrentWitness.Public != "" && c.CurrentWitness.Public == admin.Public {
-		return Plan{}, wire.Refuse("evidence_invalid")
-	}
 	if m["service"] != s.Service {
 		return Plan{}, wire.Refuse("evidence_invalid")
 	}
@@ -157,7 +148,68 @@ func ValidateAdmin(s Snapshot, peer Peer, line []byte, admin records.Key, c Cont
 			return Plan{}, wire.Refuse("evidence_invalid")
 		}
 	}
+	if e := validateSigningInventory(s, admin, c, plan, records.Key{}, records.Key{}); e != nil {
+		return Plan{}, e
+	}
 	return plan, nil
+}
+
+// validateSigningInventory checks all locally supplied current and prospective
+// signing keys. Retained old witness/consumer keys keep their original roles;
+// no credential outside the protected inputs is discovered or qualified here.
+func validateSigningInventory(s Snapshot, admin records.Key, c ControlSnapshot, plan Plan, approval, enrollment records.Key) error {
+	roles := map[string]string{}
+	add := func(public, role string) error {
+		if public == "" {
+			return nil
+		}
+		if prior, exists := roles[public]; exists && prior != role {
+			return wire.Refuse("evidence_invalid")
+		}
+		roles[public] = role
+		return nil
+	}
+	if e := add(admin.Public, "admin"); e != nil {
+		return e
+	}
+	if e := add(c.CurrentWitness.Public, "witness"); e != nil {
+		return e
+	}
+	if plan.Operation == "rotate_witness" {
+		v, e := wire.Line(plan.Action)
+		if e != nil {
+			return e
+		}
+		n := v.(map[string]any)["body"].(map[string]any)["new_binding"].(map[string]any)
+		if e = add(wire.String(n["public_key"]), "witness"); e != nil {
+			return e
+		}
+	}
+	bindings := append([]wire.Binding(nil), s.Bindings...)
+	if plan.Binding.Valid() {
+		bindings = append(bindings, plan.Binding)
+	}
+	for _, b := range bindings {
+		public, _, _ := b.RecordKey()
+		if e := add(public, "record"); e != nil {
+			return e
+		}
+		if b.Consumer() == "owner-registry" {
+			m, e := bindingObject(b)
+			if e != nil {
+				return e
+			}
+			if e = add(wire.String(m["identity"].(map[string]any)["registry_id"]), "registry-root"); e != nil {
+				return e
+			}
+		}
+	}
+	for _, key := range []struct{ public, role string }{{approval.Public, "approval"}, {enrollment.Public, "enrollment"}} {
+		if e := add(key.public, key.role); e != nil {
+			return e
+		}
+	}
+	return nil
 }
 
 // ValidateProvisionEvidence checks the exact frozen line and consent against an
@@ -206,14 +258,8 @@ func PrepareAdmin(s Snapshot, peer Peer, line []byte, admin records.Key, c Contr
 	if plan.Replay {
 		return plan, nil
 	}
-	for _, b := range s.Bindings {
-		pub, _, _ := b.RecordKey()
-		if pub != "" && (pub == p.Approval.Public || pub == p.Enrollment.Public) {
-			return Plan{}, wire.Refuse("not_authorized")
-		}
-	}
-	if c.CurrentWitness.Public != "" && (p.Approval.Public == c.CurrentWitness.Public || p.Enrollment.Public == c.CurrentWitness.Public) {
-		return Plan{}, wire.Refuse("not_authorized")
+	if e := validateSigningInventory(s, admin, c, plan, p.Approval, p.Enrollment); e != nil {
+		return Plan{}, e
 	}
 
 	switch plan.Operation {

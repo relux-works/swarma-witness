@@ -1,0 +1,11 @@
+# Required lower bound; discovery also reports new specifications.
+spec/policy-tests.md TestProvisionDurableConsentConsumedOnce
+spec/policy-tests.md TestAdminDurableOneUseID
+spec/policy-tests.md TestRotationDurableBarrierAndHistoricalReceipts
+spec/policy-tests.md TestRecordRotationRejectsTransplantedPair
+spec/policy-tests.md TestRecordRotationExactReplayPreservesResult
+spec/policy-tests.md TestTLSQualifiedTimeAdmissionHandoff
+spec/policy-tests.md TestTLSRevocationReloadCancelsSessions
+spec/policy-tests.md TestTransportStreamingBoundsAndNoLateEffects
+spec/policy-tests.md TestProvisionOwnerDisclosureApproval
+spec/policy-tests.md TestAdminQualifiedCustodyAndInitialPins

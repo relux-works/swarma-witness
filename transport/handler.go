@@ -59,7 +59,13 @@ func DecodeHTTP(raw []byte, host string) (HTTPFrame, error) {
 		if _, ok = headers[name]; ok {
 			return close()
 		}
-		headers[name] = strings.Trim(value, " \t")
+		value = strings.Trim(value, " \t")
+		for _, c := range []byte(value) {
+			if c < 32 || c > 126 {
+				return close()
+			}
+		}
+		headers[name] = value
 		switch name {
 		case "host", "content-type", "content-length", "connection", "accept", "user-agent":
 		default:
