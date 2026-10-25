@@ -6,7 +6,7 @@ linked from README; newer accepted consumer decisions need joint reconciliation.
 
 | ID | Owner | Status / required decision |
 | --- | --- | --- |
-| G01 | Owner | Public license remains open. No LICENSE file or third-party fixture data is added; visibility does not imply redistribution permission. |
+| G01 | Owner | owner decision (2026-10-25): Owner decided Apache-2.0; LICENSE added. First-party test fixtures may be distributed under this license; no third-party data is added. |
 | G02 | Contract review | Go 1.26.x accepted. Waggle S5 and its exact registrar CCJ dependency are approved and pinned; see spec/wire-v1.md. No copied verifier. Adapter activation remains separate. |
 | G03 | Contract review | This repository owns vector data. Consumers pin immutable commit plus exact manifest digest and take bytes. Closed bootstrap metadata is documented; protocol vectors remain pending. |
 | G04 | Contract review | Codec schemas accepted and implemented in wire; provisioning/consent/role enforcement remain S2 gates. |
