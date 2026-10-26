@@ -5,8 +5,9 @@ package qualifiedtime
 import "testing"
 
 // TestWindowRealTimeQualification is the real-time settlement qualification gate
-// for an exact tuple selected jointly by Keymaker and Research. It runs the same
-// real settlement, IO, 300/400 ms budgets and endpoint assertions without a
+// for an exact tuple selected jointly by the Keymaker owners and an independent
+// qualifier. It runs the same real settlement, IO, 300/400 ms budgets and endpoint
+// assertions without a
 // synctest bubble. The endpoint/fence/final clock are still synthetic: this does
 // not qualify native endpoint enforcement. The tuple is not yet selected or
 // qualified; hosted-CI virtual-time results never supply this evidence.

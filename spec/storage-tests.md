@@ -57,8 +57,9 @@ The reporter inventories these documentation rows. They are not skipped tests,
 executable green placeholders or qualification claims.
 
 `TestWindowRealTimeQualification` is a separately selectable harness, owned
-jointly by Keymaker and Research. Its qualification row remains PENDING until
-they select and qualify the exact tuple; no runner or tuple is selected here.
+jointly by the Keymaker owners and an independent qualifier. Its qualification
+row remains PENDING until they select and qualify the exact tuple; no runner or
+tuple is selected here.
 Run only for that qualification:
 `go test -mod=readonly -tags='swarma_timeconf_fixture swarma_timeconf_qualification' ./internal/qualifiedtime -run '^TestWindowRealTimeQualification$' -count=1 -timeout=60s -v`.
 It uses the same settlement/IO, endpoint assertions and unchanged 300/400 ms
@@ -86,7 +87,7 @@ assertion, rather than counting either as an exercised stuck-worker control.
 | TestStorageLifetimeExclusion | PENDING | Enforced exclusion of paused/partitioned/restored old instances through actual effects and response release. |
 | TestStorageExactRecoveryAndGenesis | PENDING | Independently authorized genesis, exact pending/outcome recovery, retained burns, joint-loss runbook and no reset/re-signing. |
 | TestStorageQualifiedTimeWindows | PENDING | Accepted WC1 Linux/macOS profiles and use transitions, original deadlines, qualified entropy, native handoff closure and enforced read-to-act endpoint. |
-| TestWindowRealTimeQualification | PENDING | Keymaker and Research must select the exact runner/storage/kernel/broker tuple and retain real-time settlement/closure evidence with the unchanged 300/400 ms budgets, real durability barriers and original endpoint assertions. Nearby timely calls succeed; original-deadline misses refuse without endpoint effects. The separately tagged harness and hosted virtual-time tests do not establish tuple acceptance or native endpoint enforcement. |
+| TestWindowRealTimeQualification | PENDING | The Keymaker owners and an independent qualifier must select the exact runner/storage/kernel/broker tuple and retain real-time settlement/closure evidence with the unchanged 300/400 ms budgets, real durability barriers and original endpoint assertions. Nearby timely calls succeed; original-deadline misses refuse without endpoint effects. The separately tagged harness and hosted virtual-time tests do not establish tuple acceptance or native endpoint enforcement. |
 | TestStorageDeviceAndArchiveRetention | PENDING | Real isolated device power-loss/namespace durability, hard reserve, protected ownership/mount layout and independently retrievable immutable archive. |
 | TestCustodianIndependentIdentity | PENDING | Independent administration/keys/epochs/pins and recovery domain: valid separately enrolled provider is the positive control; shared/derived primary key, common administrative token, wrong pin/epoch or cross-consumer scope refuses without confirmation/disclosure. Plant acceptance of a primary-derived identity; require the independent-identity assertion to fail. |
 | TestCustodianComparePrevious | PENDING | Durably confirm a valid exact predecessor/successor and recover the original exact repeat; changed occupied bytes/transaction/evidence, stale predecessor and concurrent distinct loser cannot advance, overwrite or obtain another confirmation. Plant requester-selected predecessor or digest-only retry; require the corresponding exact-position assertion to fail. |
