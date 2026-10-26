@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""WC1 inactive-adapter controls; private overlays, intended assertions only.
+"""WC1 virtual-time decision controls; real IO and unchanged deadline constants.
+
+Tuple real-time qualification is selected separately, never by this hosted gate.
 
 An unrelated setup/build failure or timeout is a survivor, never a killed plant.
 Run with a protected private TMPDIR and the pinned Go modules already downloaded.
@@ -67,8 +69,35 @@ with tempfile.TemporaryDirectory(prefix="g16-controls-") as scratch:
         command=["go","test","-mod=readonly","-tags=swarma_timeconf_fixture","-overlay="+str(overlay),"./store" if name=="G16_NULL_TABLE_HISTORY_SKIP" else "./internal/qualifiedtime","-run","^"+test+"$","-count=1","-timeout=30s","-v"]
         result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=45)
         output=result.stdout+result.stderr
-        killed=(result.returncode==1 and assertion in output and "--- FAIL: "+test in output and "[build failed]" not in output and "panic: test timed out" not in output)
+        killed=(result.returncode==1 and assertion in output and "--- FAIL: "+test in output and "[build failed]" not in output and "panic:" not in output)
         print(json.dumps({"mutant":name,"test":test,"assertion":assertion,"command":command,"exit":result.returncode,"killed":killed}),flush=True)
         print(output,end="",flush=True)
         if not killed:
             raise SystemExit("SURVIVOR: "+name)
+
+# The lifecycle detector must reject both a passing child and an unrelated
+# child failure. Neither is evidence that the deliberately stuck worker ran.
+lifecycle_source = "internal/qualifiedtime/window_lifecycle_linux_test.go"
+lifecycle_test = "TestWindowWorkerLifecycle/stuck-child"
+lifecycle_assertion = "stuck worker must be detected in child"
+for name, plant in [
+    ("LIFECYCLE_CHILD_PASSES", 'if mode == "stuck" { return }\n\t'),
+    ("LIFECYCLE_CHILD_WRONG_FAILURE", 'if mode == "stuck" { t.Fatal("unrelated lifecycle child failure") }\n\t'),
+]:
+    source = (ROOT / lifecycle_source).read_text()
+    site = 'if mode != "fatal" && mode != "stuck" {'
+    if source.count(site) != 1:
+        raise RuntimeError("nonunique lifecycle control site: " + name)
+    with tempfile.TemporaryDirectory(prefix="g16-lifecycle-") as scratch:
+        replacement = Path(scratch) / "window_lifecycle_linux_test.go"
+        replacement.write_text(source.replace(site, plant + site))
+        overlay = Path(scratch) / "overlay.json"
+        overlay.write_text(json.dumps({"Replace": {str(ROOT / lifecycle_source): str(replacement)}}))
+        command = ["go", "test", "-mod=readonly", "-tags=swarma_timeconf_fixture", "-overlay=" + str(overlay), "./internal/qualifiedtime", "-run", "^TestWindowWorkerLifecycle$/^stuck-child$", "-count=1", "-timeout=15s", "-v"]
+        result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=20)
+        output = result.stdout + result.stderr
+        killed = result.returncode == 1 and lifecycle_assertion in output and "--- FAIL: " + lifecycle_test in output and "[build failed]" not in output and "panic:" not in output
+        print(json.dumps({"lifecycle_control": name, "test": lifecycle_test, "assertion": lifecycle_assertion, "command": command, "exit": result.returncode, "killed": killed}), flush=True)
+        print(output, end="", flush=True)
+        if not killed:
+            raise SystemExit("SURVIVOR: " + name)

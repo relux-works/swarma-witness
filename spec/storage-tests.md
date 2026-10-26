@@ -56,12 +56,37 @@ serving remain unavailable under the explicit excluded scope and later G21/G22.
 The reporter inventories these documentation rows. They are not skipped tests,
 executable green placeholders or qualification claims.
 
+`TestWindowRealTimeQualification` is a separately selectable harness, owned
+jointly by Keymaker and Research. Its qualification row remains PENDING until
+they select and qualify the exact tuple; no runner or tuple is selected here.
+Run only for that qualification:
+`go test -mod=readonly -tags='swarma_timeconf_fixture swarma_timeconf_qualification' ./internal/qualifiedtime -run '^TestWindowRealTimeQualification$' -count=1 -timeout=60s -v`.
+It uses the same settlement/IO, endpoint assertions and unchanged 300/400 ms
+budgets with real elapsed time. The endpoint/fence/final clock remain synthetic;
+this is not native endpoint qualification. Hosted CI instead checks decision
+logic and ordering with `testing/synctest`, real settlement/IO and the same
+constants/assertions. Those virtual-time results do not prove the real-time
+bound or satisfy this qualification row.
+
+`TestWindowWorkerLifecycle` pairs real settlement bubble exit with cooperative
+refusal/Fatal drain controls. A bubble returns only when all its goroutines have
+exited, including the private broker worker. A deliberately noncancellable
+sleeping worker is isolated in a re-executed test binary; the parent requires its
+named failure and synctest deadlock report, never a pass. The 2 s child/3 s parent
+limits bound this harness, not a product deadline. Unexpected timeout kills fail
+the parent and are reported explicitly. These controls establish no broker-owned
+completion/drain API and do not qualify termination of native IO.
+The G16 checker also plants a passing child and an unrelated child failure;
+`TestWindowWorkerLifecycle/stuck-child` must reject both at its named detector
+assertion, rather than counting either as an exercised stuck-worker control.
+
 | Test specification | Status | Required independent evidence |
 | --- | --- | --- |
 | TestStorageCustodianFreshnessAndSLA | PENDING | Owner-selected independent provider, accepted exact signed protocol and challenge/epoch/ancestry verification, retention/latestness and whole-call SLA. |
 | TestStorageLifetimeExclusion | PENDING | Enforced exclusion of paused/partitioned/restored old instances through actual effects and response release. |
 | TestStorageExactRecoveryAndGenesis | PENDING | Independently authorized genesis, exact pending/outcome recovery, retained burns, joint-loss runbook and no reset/re-signing. |
 | TestStorageQualifiedTimeWindows | PENDING | Accepted WC1 Linux/macOS profiles and use transitions, original deadlines, qualified entropy, native handoff closure and enforced read-to-act endpoint. |
+| TestWindowRealTimeQualification | PENDING | Keymaker and Research must select the exact runner/storage/kernel/broker tuple and retain real-time settlement/closure evidence with the unchanged 300/400 ms budgets, real durability barriers and original endpoint assertions. Nearby timely calls succeed; original-deadline misses refuse without endpoint effects. The separately tagged harness and hosted virtual-time tests do not establish tuple acceptance or native endpoint enforcement. |
 | TestStorageDeviceAndArchiveRetention | PENDING | Real isolated device power-loss/namespace durability, hard reserve, protected ownership/mount layout and independently retrievable immutable archive. |
 | TestCustodianIndependentIdentity | PENDING | Independent administration/keys/epochs/pins and recovery domain: valid separately enrolled provider is the positive control; shared/derived primary key, common administrative token, wrong pin/epoch or cross-consumer scope refuses without confirmation/disclosure. Plant acceptance of a primary-derived identity; require the independent-identity assertion to fail. |
 | TestCustodianComparePrevious | PENDING | Durably confirm a valid exact predecessor/successor and recover the original exact repeat; changed occupied bytes/transaction/evidence, stale predecessor and concurrent distinct loser cannot advance, overwrite or obtain another confirmation. Plant requester-selected predecessor or digest-only retry; require the corresponding exact-position assertion to fail. |

@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/relux-works/swarma-credential-broker/timeconf"
@@ -234,44 +235,53 @@ func fixture(t *testing.T, w Window) windowFixture {
 	return windowFixture{e: e, i: i, b: Bundle{Raw: raw, Originals: packet.Originals, Prepared: prepared}, clock: clock, effect: effect, dir: dir}
 }
 
-// Every window uses real tagged broker settlement/preparation and real local S3
-// barriers. Only the endpoint/fence/clock are synthetic; this is not native
-// qualification. The positive control must commit once with a stable key.
+// Every window checks timely/late decisions and ordering on virtual time with
+// real tagged broker settlement/preparation and local S3 barriers. The endpoint,
+// fence and final clock remain synthetic. This proves neither the real-time
+// settlement bound nor native qualification. The positive control commits once
+// with a stable key; TestWindowRealTimeQualification is selected separately.
 func TestWindowTimelyEndpoint(t *testing.T) {
 	for _, w := range []Window{P, R, X, TLS} {
 		t.Run(string(w), func(t *testing.T) {
-			f := fixture(t, w)
-			if err := f.consume(context.Background(), f.i, f.b); err != nil {
-				t.Fatal("timely endpoint must commit once", err)
-			}
-			u := diskUse(t, f.dir, f.i.key())
-			if u.State != "committed" || u.Revision != 1 || f.effect.acts != 1 || f.clock.reads != 1 || u.Epoch != f.i.Snapshot.Epoch || u.Run != f.i.Run {
-				t.Fatal("timely endpoint must commit once with separate epoch and run", u.State, f.effect.acts, f.clock.reads)
-			}
-			if len(u.Intent) == 0 || !bytes.Equal(u.Handoff, f.b.Raw) || len(u.Originals) != len(f.b.Originals) {
-				t.Fatal("full intent and original closure retained")
-			}
-			if err := f.consume(context.Background(), f.i, f.b); err == nil || f.effect.acts != 1 || f.clock.reads != 1 {
-				t.Fatal("duplicate/restart attempt must not capture or act")
-			}
-			fd, err := os.Open(f.dir)
-			if err != nil {
-				t.Fatal(err)
-			}
-			reopened, err := store.Inspect(fd, "test", store.Calls{})
-			if err != nil {
-				t.Fatal("committed use must reopen", err)
-			}
-			defer reopened.Close()
-			status, err := reopened.TimeUseStatus(f.i.key())
-			if err != nil || status.State != "committed" {
-				t.Fatal("exact status only on recovery", err)
-			}
-			root, _ := reopened.Snapshot()
-			if _, err = reopened.AdmitTimeUse(f.i.key(), store.Hash(root)); err == nil {
-				t.Fatal("fresh H/run cannot create an unused stable slot")
-			}
+			synctest.Test(t, func(t *testing.T) { checkTimelyEndpoint(t, w) })
 		})
+	}
+}
+
+// checkTimelyEndpoint shares the unchanged settlement and endpoint assertions
+// between virtual-time decisions and separately selected real-time qualification.
+func checkTimelyEndpoint(t *testing.T, w Window) {
+	t.Helper()
+	f := fixture(t, w)
+	if err := f.consume(context.Background(), f.i, f.b); err != nil {
+		t.Fatal("timely endpoint must commit once", err)
+	}
+	u := diskUse(t, f.dir, f.i.key())
+	if u.State != "committed" || u.Revision != 1 || f.effect.acts != 1 || f.clock.reads != 1 || u.Epoch != f.i.Snapshot.Epoch || u.Run != f.i.Run {
+		t.Fatal("timely endpoint must commit once with separate epoch and run", u.State, f.effect.acts, f.clock.reads)
+	}
+	if len(u.Intent) == 0 || !bytes.Equal(u.Handoff, f.b.Raw) || len(u.Originals) != len(f.b.Originals) {
+		t.Fatal("full intent and original closure retained")
+	}
+	if err := f.consume(context.Background(), f.i, f.b); err == nil || f.effect.acts != 1 || f.clock.reads != 1 {
+		t.Fatal("duplicate/restart attempt must not capture or act")
+	}
+	fd, err := os.Open(f.dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reopened, err := store.Inspect(fd, "test", store.Calls{})
+	if err != nil {
+		t.Fatal("committed use must reopen", err)
+	}
+	defer reopened.Close()
+	status, err := reopened.TimeUseStatus(f.i.key())
+	if err != nil || status.State != "committed" {
+		t.Fatal("exact status only on recovery", err)
+	}
+	root, _ := reopened.Snapshot()
+	if _, err = reopened.AdmitTimeUse(f.i.key(), store.Hash(root)); err == nil {
+		t.Fatal("fresh H/run cannot create an unused stable slot")
 	}
 }
 
@@ -285,25 +295,27 @@ func TestWindowStaleAndPostReadPause(t *testing.T) {
 				name = "post-read"
 			}
 			t.Run(string(w)+"/"+name, func(t *testing.T) {
-				f := fixture(t, w)
-				if pause {
-					f.clock.after = func() { f.effect.now = f.effect.deadline }
-				} else {
-					f.clock.m.NS = f.effect.deadline
-				}
-				err := f.consume(context.Background(), f.i, f.b)
-				var refusal *timeconf.HandoffRefusal
-				if !errors.As(err, &refusal) || refusal.Code != "deadline" || f.effect.acts != 0 || f.clock.reads != 1 {
-					t.Fatal("late effect must be prevented", err, f.effect.acts)
-				}
-				u := diskUse(t, f.dir, f.i.key())
-				want := "unused"
-				if pause {
-					want = "held"
-				}
-				if u.State != want {
-					t.Fatal("post-read failure must retain burn/authority", u.State, want)
-				}
+				synctest.Test(t, func(t *testing.T) {
+					f := fixture(t, w)
+					if pause {
+						f.clock.after = func() { f.effect.now = f.effect.deadline }
+					} else {
+						f.clock.m.NS = f.effect.deadline
+					}
+					err := f.consume(context.Background(), f.i, f.b)
+					var refusal *timeconf.HandoffRefusal
+					if !errors.As(err, &refusal) || refusal.Code != "deadline" || f.effect.acts != 0 || f.clock.reads != 1 {
+						t.Fatal("late effect must be prevented", err, f.effect.acts)
+					}
+					u := diskUse(t, f.dir, f.i.key())
+					want := "unused"
+					if pause {
+						want = "held"
+					}
+					if u.State != want {
+						t.Fatal("post-read failure must retain burn/authority", u.State, want)
+					}
+				})
 			})
 		}
 	}
@@ -314,35 +326,37 @@ func TestWindowStaleAndPostReadPause(t *testing.T) {
 func TestWindowDoubleCheckAndExtraRead(t *testing.T) {
 	for _, w := range []Window{P, R, X, TLS} {
 		t.Run(string(w), func(t *testing.T) {
-			f := fixture(t, w)
-			expected, native, err := f.i.expected()
-			if err != nil {
-				t.Fatal(err)
-			}
-			local := timeconf.LockedWindowState{Intent: expected, Revision: "0", Epoch: expected.Epoch, Unused: true, Current: true, FloorNS: f.i.FloorNS, ExpiryNS: f.i.ExpiryNS}
-			for n := 0; n < 2; n++ {
-				if _, err = timeconf.VerifyWindow(f.b.Prepared, expected, local, f.clock.m); err != nil {
-					t.Fatal("pure check must not burn", err)
+			synctest.Test(t, func(t *testing.T) {
+				f := fixture(t, w)
+				expected, native, err := f.i.expected()
+				if err != nil {
+					t.Fatal(err)
 				}
-			}
-			a, err := f.e.disk.AdmitTimeUse(f.i.key(), f.i.Snapshot.Root)
-			if err != nil {
-				t.Fatal(err)
-			}
-			f.e.g.Lock()
-			s := &useReceiver{admitted: a, local: local, intent: f.i, native: native, bundle: f.b, runtime: f.e.runtime}
-			_, first := s.capture()
-			_, second := s.capture()
-			f.e.g.Unlock()
-			a.Release()
-			var refusal *timeconf.HandoffRefusal
-			if first != nil || !errors.As(second, &refusal) || refusal.Code != "extra_read" || f.clock.reads != 1 {
-				t.Fatal("second read must be refused", first, second)
-			}
-			f.clock.reads = 0
-			if err = f.consume(context.Background(), f.i, f.b); err != nil || f.effect.acts != 1 {
-				t.Fatal("double check allows only one act", err)
-			}
+				local := timeconf.LockedWindowState{Intent: expected, Revision: "0", Epoch: expected.Epoch, Unused: true, Current: true, FloorNS: f.i.FloorNS, ExpiryNS: f.i.ExpiryNS}
+				for n := 0; n < 2; n++ {
+					if _, err = timeconf.VerifyWindow(f.b.Prepared, expected, local, f.clock.m); err != nil {
+						t.Fatal("pure check must not burn", err)
+					}
+				}
+				a, err := f.e.disk.AdmitTimeUse(f.i.key(), f.i.Snapshot.Root)
+				if err != nil {
+					t.Fatal(err)
+				}
+				f.e.g.Lock()
+				s := &useReceiver{admitted: a, local: local, intent: f.i, native: native, bundle: f.b, runtime: f.e.runtime}
+				_, first := s.capture()
+				_, second := s.capture()
+				f.e.g.Unlock()
+				a.Release()
+				var refusal *timeconf.HandoffRefusal
+				if first != nil || !errors.As(second, &refusal) || refusal.Code != "extra_read" || f.clock.reads != 1 {
+					t.Fatal("second read must be refused", first, second)
+				}
+				f.clock.reads = 0
+				if err = f.consume(context.Background(), f.i, f.b); err != nil || f.effect.acts != 1 {
+					t.Fatal("double check allows only one act", err)
+				}
+			})
 		})
 	}
 }
@@ -353,32 +367,34 @@ func TestWindowDoubleCheckAndExtraRead(t *testing.T) {
 func TestWindowNativeReadSetAndEpoch(t *testing.T) {
 	for _, w := range []Window{P, R, X, TLS} {
 		t.Run(string(w), func(t *testing.T) {
-			f := fixture(t, w)
-			e, _, err := f.i.expected()
-			if err != nil {
-				t.Fatal(err)
-			}
-			if e.Epoch == e.Run || e.Epoch != f.i.Snapshot.Epoch {
-				t.Fatal("epoch must remain distinct from run")
-			}
-			if w == TLS {
-				want, err := transport.ConsumerOperationDigest(f.i.TLSBody)
-				if err != nil || want != e.Operation {
-					t.Fatal("TLS operation digest changed", err)
+			synctest.Test(t, func(t *testing.T) {
+				f := fixture(t, w)
+				e, _, err := f.i.expected()
+				if err != nil {
+					t.Fatal(err)
 				}
-			}
-			for _, mutate := range []func(*NativeSnapshot){func(s *NativeSnapshot) { s.Root = wire.ZeroHash }, func(s *NativeSnapshot) { s.Record = store.Hash([]byte("changed")) }, func(s *NativeSnapshot) { s.Epoch = f.i.Run }, func(s *NativeSnapshot) { s.UnusedRevision++ }} {
+				if e.Epoch == e.Run || e.Epoch != f.i.Snapshot.Epoch {
+					t.Fatal("epoch must remain distinct from run")
+				}
+				if w == TLS {
+					want, err := transport.ConsumerOperationDigest(f.i.TLSBody)
+					if err != nil || want != e.Operation {
+						t.Fatal("TLS operation digest changed", err)
+					}
+				}
+				for _, mutate := range []func(*NativeSnapshot){func(s *NativeSnapshot) { s.Root = wire.ZeroHash }, func(s *NativeSnapshot) { s.Record = store.Hash([]byte("changed")) }, func(s *NativeSnapshot) { s.Epoch = f.i.Run }, func(s *NativeSnapshot) { s.UnusedRevision++ }} {
+					f = fixture(t, w)
+					mutate(&f.e.native)
+					var refusal *timeconf.HandoffRefusal
+					if err = f.consume(context.Background(), f.i, f.b); !errors.As(err, &refusal) || refusal.Code != "native_predecessor" || f.clock.reads != 0 || f.effect.acts != 0 {
+						t.Fatal("native snapshot must be compared before m", err)
+					}
+				}
 				f = fixture(t, w)
-				mutate(&f.e.native)
-				var refusal *timeconf.HandoffRefusal
-				if err = f.consume(context.Background(), f.i, f.b); !errors.As(err, &refusal) || refusal.Code != "native_predecessor" || f.clock.reads != 0 || f.effect.acts != 0 {
-					t.Fatal("native snapshot must be compared before m", err)
+				if err = f.consume(context.Background(), f.i, f.b); err != nil {
+					t.Fatal("unchanged native positive", err)
 				}
-			}
-			f = fixture(t, w)
-			if err = f.consume(context.Background(), f.i, f.b); err != nil {
-				t.Fatal("unchanged native positive", err)
-			}
+			})
 		})
 	}
 }
@@ -388,31 +404,33 @@ func TestWindowNativeReadSetAndEpoch(t *testing.T) {
 func TestWindowTransitionMapping(t *testing.T) {
 	for _, w := range []Window{P, R, X, TLS} {
 		t.Run(string(w), func(t *testing.T) {
-			f := fixture(t, w)
-			h, err := Decode(f.i, f.b.Raw)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if raw, err := Encode(f.i, h); err != nil || !bytes.Equal(raw, f.b.Raw) {
-				t.Fatal("exact mapping positive", err)
-			}
-			for _, version := range []string{NativeTransition, "WC1TimeUse:2", "OtherUse:1"} {
-				bad := h
-				bad.Handoff.TransitionVersion = version
-				if _, err = Encode(f.i, bad); err == nil {
-					t.Fatal("encoding mismatch accepted")
+			synctest.Test(t, func(t *testing.T) {
+				f := fixture(t, w)
+				h, err := Decode(f.i, f.b.Raw)
+				if err != nil {
+					t.Fatal(err)
 				}
-				if raw, e := timeconf.EncodeHandoff(bad); e == nil {
-					if _, err = Decode(f.i, raw); err == nil {
-						t.Fatal("decoding mismatch accepted")
+				if raw, err := Encode(f.i, h); err != nil || !bytes.Equal(raw, f.b.Raw) {
+					t.Fatal("exact mapping positive", err)
+				}
+				for _, version := range []string{NativeTransition, "WC1TimeUse:2", "OtherUse:1"} {
+					bad := h
+					bad.Handoff.TransitionVersion = version
+					if _, err = Encode(f.i, bad); err == nil {
+						t.Fatal("encoding mismatch accepted")
+					}
+					if raw, e := timeconf.EncodeHandoff(bad); e == nil {
+						if _, err = Decode(f.i, raw); err == nil {
+							t.Fatal("decoding mismatch accepted")
+						}
 					}
 				}
-			}
-			bad := f.i
-			bad.Mapping = "unknown"
-			if err = f.consume(context.Background(), bad, f.b); err == nil || f.clock.reads != 0 {
-				t.Fatal("unknown mapping reached use")
-			}
+				bad := f.i
+				bad.Mapping = "unknown"
+				if err = f.consume(context.Background(), bad, f.b); err == nil || f.clock.reads != 0 {
+					t.Fatal("unknown mapping reached use")
+				}
+			})
 		})
 	}
 }
@@ -423,40 +441,42 @@ func TestWindowTransitionMapping(t *testing.T) {
 func TestXPostSendAccountingFailure(t *testing.T) {
 	for _, fault := range []string{"none", "write", "sync", "readback", "crash"} {
 		t.Run(fault, func(t *testing.T) {
-			f := fixture(t, X)
-			if err := f.consume(context.Background(), f.i, f.b); err != nil || f.effect.acts != 1 {
-				t.Fatal("X timely full frame", err)
-			}
-			before := diskUse(t, f.dir, f.i.key())
-			if !bytes.Equal(f.effect.frame, f.i.FrozenOutcome) {
-				t.Fatal("full original frame not delivered by model")
-			}
-			note := deliveryNote(t.TempDir(), fault)
-			if fault == "none" && note != nil || fault != "none" && (note == nil || note.Error() != fault) {
-				t.Fatal("intended delivery-note fault not exercised", fault, note)
-			}
-			fd, err := os.Open(f.dir)
-			if err != nil {
-				t.Fatal(err)
-			}
-			d, err := store.Inspect(fd, "test", store.Calls{})
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer d.Close()
-			after, err := d.TimeUseStatus(f.i.key())
-			if err != nil {
-				t.Fatal(err)
-			}
-			a, _ := json.Marshal(before)
-			b, _ := json.Marshal(after)
-			if !bytes.Equal(a, b) || after.State != "committed" {
-				t.Fatal("post-send accounting changed release authority")
-			}
-			root, _ := d.Snapshot()
-			if _, err = d.AdmitTimeUse(f.i.key(), store.Hash(root)); err == nil {
-				t.Fatal("accounting failure authorized resend")
-			}
+			synctest.Test(t, func(t *testing.T) {
+				f := fixture(t, X)
+				if err := f.consume(context.Background(), f.i, f.b); err != nil || f.effect.acts != 1 {
+					t.Fatal("X timely full frame", err)
+				}
+				before := diskUse(t, f.dir, f.i.key())
+				if !bytes.Equal(f.effect.frame, f.i.FrozenOutcome) {
+					t.Fatal("full original frame not delivered by model")
+				}
+				note := deliveryNote(t.TempDir(), fault)
+				if fault == "none" && note != nil || fault != "none" && (note == nil || note.Error() != fault) {
+					t.Fatal("intended delivery-note fault not exercised", fault, note)
+				}
+				fd, err := os.Open(f.dir)
+				if err != nil {
+					t.Fatal(err)
+				}
+				d, err := store.Inspect(fd, "test", store.Calls{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer d.Close()
+				after, err := d.TimeUseStatus(f.i.key())
+				if err != nil {
+					t.Fatal(err)
+				}
+				a, _ := json.Marshal(before)
+				b, _ := json.Marshal(after)
+				if !bytes.Equal(a, b) || after.State != "committed" {
+					t.Fatal("post-send accounting changed release authority")
+				}
+				root, _ := d.Snapshot()
+				if _, err = d.AdmitTimeUse(f.i.key(), store.Hash(root)); err == nil {
+					t.Fatal("accounting failure authorized resend")
+				}
+			})
 		})
 	}
 }
@@ -509,45 +529,47 @@ func deliveryNote(dir, fault string) error {
 func TestWindowStableKey(t *testing.T) {
 	for _, w := range []Window{P, R, X, TLS} {
 		t.Run(string(w), func(t *testing.T) {
-			f := fixture(t, w)
-			if err := f.consume(context.Background(), f.i, f.b); err != nil {
-				t.Fatal("stable original slot must accept independently of H", err)
-			}
-			u := diskUse(t, f.dir, f.i.key())
-			if u.Key.Original != f.i.Original || u.Key.Lineage != f.i.Lineage || u.Key.Slot != 1 {
-				t.Fatal("stable original key cannot be H")
-			}
-			root, _ := f.e.disk.Snapshot()
-			f.i.Snapshot.Root = store.Hash(root)
-			f.i.Snapshot.UnusedRevision = 1
-			f.i.Snapshot.Epoch = "replacement:epoch-43"
-			f.i.Run = strings.Repeat("b", 32)
-			f.e.native = f.i.Snapshot
-			h, err := timeconf.DecodeHandoff(f.b.Raw)
-			if err != nil {
-				t.Fatal(err)
-			}
-			h.Handoff.ID = strings.Repeat("4", 32)
-			h.Handoff.ConsumerRun = f.i.Run
-			// P/R/X operation bodies change with the full read set, while TLS's
-			// existing body stays fixed. Already-burned slots refuse either way.
-			if w == TLS {
-				f.b.Raw, err = Encode(f.i, h)
+			synctest.Test(t, func(t *testing.T) {
+				f := fixture(t, w)
+				if err := f.consume(context.Background(), f.i, f.b); err != nil {
+					t.Fatal("stable original slot must accept independently of H", err)
+				}
+				u := diskUse(t, f.dir, f.i.key())
+				if u.Key.Original != f.i.Original || u.Key.Lineage != f.i.Lineage || u.Key.Slot != 1 {
+					t.Fatal("stable original key cannot be H")
+				}
+				root, _ := f.e.disk.Snapshot()
+				f.i.Snapshot.Root = store.Hash(root)
+				f.i.Snapshot.UnusedRevision = 1
+				f.i.Snapshot.Epoch = "replacement:epoch-43"
+				f.i.Run = strings.Repeat("b", 32)
+				f.e.native = f.i.Snapshot
+				h, err := timeconf.DecodeHandoff(f.b.Raw)
 				if err != nil {
 					t.Fatal(err)
 				}
-				e, _, err := f.i.expected()
-				if err != nil {
-					t.Fatal(err)
+				h.Handoff.ID = strings.Repeat("4", 32)
+				h.Handoff.ConsumerRun = f.i.Run
+				// P/R/X operation bodies change with the full read set, while TLS's
+				// existing body stays fixed. Already-burned slots refuse either way.
+				if w == TLS {
+					f.b.Raw, err = Encode(f.i, h)
+					if err != nil {
+						t.Fatal(err)
+					}
+					e, _, err := f.i.expected()
+					if err != nil {
+						t.Fatal(err)
+					}
+					f.b.Prepared, err = timeconftest.PrepareHandoff(f.b.Raw, f.b.Originals, e, 211000000000)
+					if err != nil {
+						t.Fatal(err)
+					}
 				}
-				f.b.Prepared, err = timeconftest.PrepareHandoff(f.b.Raw, f.b.Originals, e, 211000000000)
-				if err != nil {
-					t.Fatal(err)
+				if err = f.consume(context.Background(), f.i, f.b); err == nil || f.effect.acts != 1 || f.clock.reads != 1 {
+					t.Fatal("fresh H, run or epoch must not redispatch burned slot", err)
 				}
-			}
-			if err = f.consume(context.Background(), f.i, f.b); err == nil || f.effect.acts != 1 || f.clock.reads != 1 {
-				t.Fatal("fresh H, run or epoch must not redispatch burned slot", err)
-			}
+			})
 		})
 	}
 }
@@ -559,28 +581,30 @@ func TestWindowOriginalsAndBinding(t *testing.T) {
 	for _, w := range []Window{P, R, X, TLS} {
 		for _, fault := range []string{"missing", "substitute", "deadline", "mapping"} {
 			t.Run(string(w)+"/"+fault, func(t *testing.T) {
-				f := fixture(t, w)
-				want := "transition_mapping"
-				switch fault {
-				case "missing":
-					f.b.Originals = f.b.Originals[:len(f.b.Originals)-1]
-					want = "original_missing"
-				case "substitute":
-					f.b.Originals[4] = []byte("substitution")
-					want = "original_mismatch"
-				case "deadline":
-					f.i.Deadline.AbsoluteNS = "211260000000"
-				case "mapping":
-					f.i.TransitionVersion = "WC1TimeUse:2"
-					want = "native_binding"
-				}
-				var refusal *timeconf.HandoffRefusal
-				if err := f.consume(context.Background(), f.i, f.b); !errors.As(err, &refusal) || refusal.Code != want || f.clock.reads != 0 || f.effect.acts != 0 {
-					t.Fatal("original/binding refusal must precede capture", fault, err)
-				}
-				if u := diskUse(t, f.dir, f.i.key()); u.State != "unused" {
-					t.Fatal("invalid preparation burned slot")
-				}
+				synctest.Test(t, func(t *testing.T) {
+					f := fixture(t, w)
+					want := "transition_mapping"
+					switch fault {
+					case "missing":
+						f.b.Originals = f.b.Originals[:len(f.b.Originals)-1]
+						want = "original_missing"
+					case "substitute":
+						f.b.Originals[4] = []byte("substitution")
+						want = "original_mismatch"
+					case "deadline":
+						f.i.Deadline.AbsoluteNS = "211260000000"
+					case "mapping":
+						f.i.TransitionVersion = "WC1TimeUse:2"
+						want = "native_binding"
+					}
+					var refusal *timeconf.HandoffRefusal
+					if err := f.consume(context.Background(), f.i, f.b); !errors.As(err, &refusal) || refusal.Code != want || f.clock.reads != 0 || f.effect.acts != 0 {
+						t.Fatal("original/binding refusal must precede capture", fault, err)
+					}
+					if u := diskUse(t, f.dir, f.i.key()); u.State != "unused" {
+						t.Fatal("invalid preparation burned slot")
+					}
+				})
 			})
 		}
 	}
@@ -591,20 +615,22 @@ func TestWindowOriginalsAndBinding(t *testing.T) {
 func TestWindowFailedCheckRetires(t *testing.T) {
 	for _, w := range []Window{P, R, X, TLS} {
 		t.Run(string(w), func(t *testing.T) {
-			f := fixture(t, w)
-			timely := f.clock.m
-			f.clock.m.NS = f.effect.deadline
-			var refusal *timeconf.HandoffRefusal
-			if err := f.consume(context.Background(), f.i, f.b); !errors.As(err, &refusal) || refusal.Code != "deadline" {
-				t.Fatal("expected first check expiry", err)
-			}
-			f.clock.m = timely
-			if err := f.consume(context.Background(), f.i, f.b); !errors.As(err, &refusal) || refusal.Code != "retired" || f.clock.reads != 1 || f.effect.acts != 0 {
-				t.Fatal("failed check must retire preparation", err)
-			}
-			if diskUse(t, f.dir, f.i.key()).State != "unused" {
-				t.Fatal("failed check wrote a burn")
-			}
+			synctest.Test(t, func(t *testing.T) {
+				f := fixture(t, w)
+				timely := f.clock.m
+				f.clock.m.NS = f.effect.deadline
+				var refusal *timeconf.HandoffRefusal
+				if err := f.consume(context.Background(), f.i, f.b); !errors.As(err, &refusal) || refusal.Code != "deadline" {
+					t.Fatal("expected first check expiry", err)
+				}
+				f.clock.m = timely
+				if err := f.consume(context.Background(), f.i, f.b); !errors.As(err, &refusal) || refusal.Code != "retired" || f.clock.reads != 1 || f.effect.acts != 0 {
+					t.Fatal("failed check must retire preparation", err)
+				}
+				if diskUse(t, f.dir, f.i.key()).State != "unused" {
+					t.Fatal("failed check wrote a burn")
+				}
+			})
 		})
 	}
 }
@@ -612,18 +638,20 @@ func TestWindowFailedCheckRetires(t *testing.T) {
 // X's separate positive commit/send bounds must fit the original total f;
 // undefined, zero, overflow and over-budget components never reach admission.
 func TestXComponentBounds(t *testing.T) {
-	f := fixture(t, X)
-	if _, _, err := f.i.expected(); err != nil {
-		t.Fatal("valid split bound", err)
-	}
-	for _, pair := range [][2]int64{{0, 10000000}, {10000000, 0}, {10000001, 10000000}, {1<<63 - 1, 1}} {
-		i := f.i
-		i.XCommitNS = pair[0]
-		i.XSendNS = pair[1]
-		if err := f.consume(context.Background(), i, f.b); err == nil || f.clock.reads != 0 || f.effect.acts != 0 {
-			t.Fatal("undefined/over-budget split reached use", err)
+	synctest.Test(t, func(t *testing.T) {
+		f := fixture(t, X)
+		if _, _, err := f.i.expected(); err != nil {
+			t.Fatal("valid split bound", err)
 		}
-	}
+		for _, pair := range [][2]int64{{0, 10000000}, {10000000, 0}, {10000001, 10000000}, {1<<63 - 1, 1}} {
+			i := f.i
+			i.XCommitNS = pair[0]
+			i.XSendNS = pair[1]
+			if err := f.consume(context.Background(), i, f.b); err == nil || f.clock.reads != 0 || f.effect.acts != 0 {
+				t.Fatal("undefined/over-budget split reached use", err)
+			}
+		}
+	})
 }
 
 // A pause before the first authoritative commit must prevent that commit, not
@@ -631,15 +659,17 @@ func TestXComponentBounds(t *testing.T) {
 func TestWindowLateCommitForbidden(t *testing.T) {
 	for _, w := range []Window{X, TLS} {
 		t.Run(string(w), func(t *testing.T) {
-			f := fixture(t, w)
-			f.clock.after = func() { f.effect.now = f.effect.deadline }
-			if err := f.consume(context.Background(), f.i, f.b); err == nil {
-				t.Fatal("late endpoint accepted")
-			}
-			u := diskUse(t, f.dir, f.i.key())
-			if u.State == "committed" || len(u.Outcome) != 0 || f.effect.acts != 0 {
-				t.Fatal("late authority commit must be prevented")
-			}
+			synctest.Test(t, func(t *testing.T) {
+				f := fixture(t, w)
+				f.clock.after = func() { f.effect.now = f.effect.deadline }
+				if err := f.consume(context.Background(), f.i, f.b); err == nil {
+					t.Fatal("late endpoint accepted")
+				}
+				u := diskUse(t, f.dir, f.i.key())
+				if u.State == "committed" || len(u.Outcome) != 0 || f.effect.acts != 0 {
+					t.Fatal("late authority commit must be prevented")
+				}
+			})
 		})
 	}
 }
@@ -649,16 +679,18 @@ func TestWindowLateCommitForbidden(t *testing.T) {
 func TestWindowPostCommitPause(t *testing.T) {
 	for _, w := range []Window{X, TLS} {
 		t.Run(string(w), func(t *testing.T) {
-			f := fixture(t, w)
-			f.effect.before = func() { f.effect.now = f.effect.deadline }
-			var refusal *timeconf.HandoffRefusal
-			if err := f.consume(context.Background(), f.i, f.b); !errors.As(err, &refusal) || refusal.Code != "deadline" {
-				t.Fatal("late delivery must refuse", err)
-			}
-			u := diskUse(t, f.dir, f.i.key())
-			if u.State != "committed" || len(u.Outcome) == 0 || f.effect.acts != 0 || len(f.effect.frame) != 0 {
-				t.Fatal("timely authority must survive late delivery without effects")
-			}
+			synctest.Test(t, func(t *testing.T) {
+				f := fixture(t, w)
+				f.effect.before = func() { f.effect.now = f.effect.deadline }
+				var refusal *timeconf.HandoffRefusal
+				if err := f.consume(context.Background(), f.i, f.b); !errors.As(err, &refusal) || refusal.Code != "deadline" {
+					t.Fatal("late delivery must refuse", err)
+				}
+				u := diskUse(t, f.dir, f.i.key())
+				if u.State != "committed" || len(u.Outcome) == 0 || f.effect.acts != 0 || len(f.effect.frame) != 0 {
+					t.Fatal("timely authority must survive late delivery without effects")
+				}
+			})
 		})
 	}
 }

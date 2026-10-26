@@ -61,9 +61,9 @@ jobs:
         run: bash --noprofile --norc -eo pipefail .github/scripts/check-pending-controls.sh
       - name: Verify S3 transaction controls
         run: python3 .github/scripts/check-s3-controls.py
-      - name: Verify inactive G16 controls
+      - name: Verify virtual-time G16 controls
         run: python3 .github/scripts/check-g16-controls.py
-      - name: Test tagged G16 adapter
+      - name: Test tagged G16 decisions on virtual time
         run: go test -mod=readonly -tags=swarma_timeconf_fixture ./internal/qualifiedtime -count=1 -timeout=1m -v
       - name: Test
         run: go test -mod=readonly ./... -count=1 -timeout=1m -v
