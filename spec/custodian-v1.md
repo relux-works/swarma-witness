@@ -268,8 +268,10 @@ live enforcement through the complete endpoint. Revocation or uncertainty
 closes all dependent effects, retained results and asynchronous completions.
 Replacement cannot open until old executors and delegated effects are proven
 unable to act; a resumed process cannot continue an old final act from a saved
-confirmation/use. Preserve independently current Epoch, per-process Run and
-original use revision as distinct identities. Provider confirmation cannot
+confirmation/use. Preserve independently current Epoch, private per-attempt Run
+bound to preparation, and original use revision as distinct identities. If the
+old-instance fence needs a process incarnation identity, bind it separately;
+never overload Run. Provider confirmation cannot
 recall an already emitted signature, so downstream effect boundaries must also
 honor their accepted revocation/ownership checks. Emergency stop must not wait
 for locks, a provider reply or that dependency graph to complete.
@@ -281,8 +283,9 @@ and prepared response release remain covered; another consumer's fence is not
 proof of exclusion for these actors.
 
 The joint broker/enforcer binding must cover installation, **both broker scope
-identities**, ownership Epoch, process Run, original use/transaction revision and
-protected effect handles. The custodian validates that authority **before
+identities**, ownership Epoch, private per-attempt Run bound to preparation,
+original use/transaction revision and protected effect handles.
+The custodian validates that authority **before
 confirmation and before release**; enforcement must continuously cover broker
 W/hold/D5 writes, local pointer publication and material release through their
 complete endpoints. Revocation propagation, delegated/in-flight effects, old-instance
