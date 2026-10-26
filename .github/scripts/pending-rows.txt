@@ -20,3 +20,14 @@ spec/qualifiedtime-tests.md TestWC1RealUseCustody
 spec/qualifiedtime-tests.md TestWC1RealWitness
 spec/qualifiedtime-tests.md TestWC1RealOriginalReader
 spec/qualifiedtime-tests.md TestWC1MacOSParity
+spec/storage-tests.md TestCustodianIndependentIdentity
+spec/storage-tests.md TestCustodianComparePrevious
+spec/storage-tests.md TestCustodianOriginalEvidence
+spec/storage-tests.md TestCustodianFreshControl
+spec/storage-tests.md TestCustodianUnknownOutcome
+spec/storage-tests.md TestCustodianEitherSideRestore
+spec/storage-tests.md TestCustodianAuthorizedContinuity
+spec/storage-tests.md TestCustodianLifetimeExclusion
+spec/storage-tests.md TestCustodianDeadlineAndInventory
+spec/storage-tests.md TestCustodianConsumerCoverage
+spec/storage-tests.md TestCustodianNativeParity

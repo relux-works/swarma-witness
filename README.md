@@ -23,6 +23,14 @@ prepare/audit, root publication, response release and TLS use transitions. The
 and S3-owned use retention. Production consumption remains `handoff_unqualified`;
 native endpoints, bounds, custody and Linux/macOS qualification stay closed.
 
+The [custodian protocol proposal](spec/custodian-v1.md) describes the selected
+M0 direction: a synchronous independent second witness plus separately enforced
+old-instance exclusion. Exact-predecessor confirmation, original evidence,
+challenge-bound head/current-control reads and evidence-bound recovery remain
+unimplemented and unqualified. Prototype account separation is not production
+independence. Consumer bindings, wire forms, workload limits and native timing
+still need acceptance; no provider/serving gate is opened.
+
 The conditional contract is the [witness-service specification](https://github.com/relux-works/swarma-keymaker/blob/7a2262ce2b8b84b9e9bc627972d4e07d62d34270/spec/witness-service.md),
 with the separate [Keymaker consumer contract](https://github.com/relux-works/swarma-keymaker/blob/7a2262ce2b8b84b9e9bc627972d4e07d62d34270/spec/keymaker-witness.md).
 The implementation will require exact LF-inclusive record acknowledgements,
@@ -101,8 +109,9 @@ They establish specific checker coverage, not universal detection.
 Licensed under [Apache-2.0](LICENSE). The owner decision (2026-10-25) records separate
 roles, independent custody with retained recovery evidence, and disclosure closed
 by default: only an explicitly approved reader set, otherwise isolation without
-filtering the signed chain. Concrete custodian selection and protocols/SLA
-remain open; all implementation and qualification gates stay closed. See
+filtering the signed chain. The second-witness custody direction is selected;
+concrete identity/pins, protocols, exclusion/recovery enforcement and SLA remain
+open. All implementation and qualification gates stay closed. See
 [recorded decisions and remaining dependencies](UNRESOLVED_QUESTIONS.md).
 
 The S1 negative-first tests and six narrowing controls are documented in the

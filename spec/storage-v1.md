@@ -81,8 +81,13 @@ truncated. Qualified disk/namespace durability and hard reserve remain PENDING.
 
 The owner decision (2026-10-25), G17 and registry Q10, selects one synchronous
 independent custodian shared by both specs: exact predecessor confirmation and
-fresh reads within the budget, with no periodic or local fallback. The provider
-is not yet chosen; its protocol, SLA and qualification remain open dependencies.
+fresh reads within the budget, with no periodic or local fallback. The selected
+M0 direction is a second witness on a separate VPS: production at a different
+provider/account; prototype at the same provider in a separate project/account,
+without a shared API token. This retains common-provider failure risk and selects
+no qualified implementation, pins, recovery root or SLA. The
+[custodian protocol proposal](custodian-v1.md) defines independent compare-previous,
+original evidence, fresh control, consumer budgets and closed qualification gaps.
 The stricter exact tuple and independent confirmation rules below still apply.
 
 Checksums establish local integrity only. Before work, independently verified
@@ -155,12 +160,17 @@ custody, durable one-use approval or a production archive implementation.
 The owner decision (2026-10-25), G18, requires that after pause, partition or
 revoke an old instance or clone cannot write, sign or emit anything. Heartbeat,
 flock and CAS are not fences. Lifetime exclusion remains unimplemented and
-unqualified.
+unqualified. The [G18 proposal](custodian-v1.md#6-g18-lifetime-exclusion-and-consumer-admission)
+requires independently enforced authority through writes, signatures and release,
+including prepared responses and unlocked calls; a point check cannot supply it.
 
 The owner decision (2026-10-25), G19, permits only evidence-bound recovery with
 old instances fenced. When ambiguous, hold; never recreate. This records the
 recovery policy without supplying a runbook or opening a recovery path. The
 stricter no-auto-repair/genesis/regeneration/downgrade rules below still apply.
+The [G19 proposal](custodian-v1.md#5-uncertainty-restore-and-continuity) specifies
+either-side hold/reconciliation and independently authorized continuity; missing
+or restored state never grants a new lineage. No recovery path is opened.
 
 G16 time window codecs, durable use/burn state and enforced read-to-act bounds are
 excluded. Time Prepare/Publish/Release are closed interfaces; their shapes are

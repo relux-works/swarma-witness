@@ -26,9 +26,12 @@ and synthetic tests do not establish these custody or isolation properties.
 
 The owner decision (2026-10-25), G10/G11, retains separate roles and independent
 custody with retained recovery evidence. Placement on the trust node and the
-isolated registry-owner signer are unchanged. Concrete custodian options remain
-pending; the role and credential exclusions above still apply and require
-implementation and qualification.
+isolated registry-owner signer are unchanged. The selected custody direction
+is a second witness with independent keys, epochs, pins and administration;
+see the [G17 proposal](custodian-v1.md).
+Concrete provider identity/pins, protocols and qualification remain pending;
+the role and credential exclusions above still apply and require implementation
+and qualification.
 
 The owner decision (2026-10-25), G07, keeps disclosure closed by default: disclose
 only to an explicitly approved reader set; otherwise isolation, without filtering
