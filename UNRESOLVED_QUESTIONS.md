@@ -7,10 +7,10 @@ linked from README; newer accepted consumer decisions need joint reconciliation.
 | ID | Owner | Status / required decision |
 | --- | --- | --- |
 | G01 | Owner | owner decision (2026-10-25): Owner decided Apache-2.0; LICENSE added. First-party test fixtures may be distributed under this license; no third-party data is added. |
-| G02 | Contract review | Go 1.26.x accepted. Waggle S5 and its exact registrar CCJ dependency are approved and pinned; see spec/wire-v1.md. No copied verifier. Adapter activation remains separate. |
+| G02 | Contract review | Go 1.26.x accepted. The published envelope module and its exact registrar CCJ dependency are pinned; see spec/wire-v1.md. Consumed historical S5 helpers remain unchanged; no copied verifier. Adapter activation remains separate. |
 | G03 | Contract review | This repository owns vector data. Consumers pin immutable commit plus exact manifest digest and take bytes. Closed bootstrap metadata is documented; protocol vectors remain pending. |
 | G04 | Contract review | Codec schemas accepted and implemented in wire; provisioning/consent/role enforcement remain S2 gates. |
-| G05 | Contract review | Strict pinned Waggle helpers, separate canonical-equality rule, exact enums/nulls and first-party signature vectors implemented. Production custody remains open. |
+| G05 | Contract review | Strict pinned envelope record helpers, separate canonical-equality rule, exact enums/nulls and first-party signature vectors implemented. Production custody remains open. |
 | G06 | Contract review | Syntax gate closed by registrar spec 3fc31e4 and mandatory-format code 264660e. Codec uses protected profile literals, no registry/Loader import or 40|64 fallback. Candidate-state validation and authenticated append remain later gates. |
 | G07 | Owner | owner decision (2026-10-25): closed by default. Disclose control metadata only to an explicitly approved reader set; otherwise isolation, without filtering the signed chain. Approval of the actual reader set or isolation design, implementation and qualification remain required; the gate stays closed. See [policy constraints](spec/policy-v1.md). |
 | G08 | Owner and contract review | Pure signed consent/tuple validation implemented; protected storage and durable one-use consumption remain S3/S4. No implicit first use. |
@@ -35,5 +35,5 @@ linked from README; newer accepted consumer decisions need joint reconciliation.
 | G27 | Contract review | Specify bounded admission/rate/memory/reserve algorithms and precedence. |
 | G28 | Owner and contract review | Define exact qualification identity, acceptance thresholds and isolated fault environment. |
 | G29 | Owner and contract review | Decide deployment, custody, readiness and shutdown ownership. Bootstrap authorizes none of these. |
-| G30 | Contract review | Align stale references with accepted real-head snapshot reissue and separate idle currentness. S5 helpers are pinned; freshness/currentness adapters remain inactive here. |
+| G30 | Contract review | Align stale references with accepted real-head snapshot reissue and separate idle currentness. Current envelope record helpers are pinned; freshness/currentness adapters remain inactive here. |
 | G31 | Contract review | Accept pre-intent genesis and historical-checkpoint verification paths. Existing S3 VerifyJournal expects authenticated witness facts; never fabricate them or weaken its global checks. |

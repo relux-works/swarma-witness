@@ -24,7 +24,7 @@ func TestDependencyPolicyRejectsUnapprovedModule(t *testing.T) {
 			t.Fatal("unapproved directive/module accepted", err)
 		}
 	}
-	for _, tail := range []string{"", "require github.com/relux-works/waggle " + WaggleVersion + "\n", "require github.com/relux-works/swarma-credential-broker " + BrokerVersion + "\n", "require golang.org/x/sys v0.38.0 // indirect\n", "require (\n github.com/relux-works/waggle " + WaggleVersion + " // indirect\n)\n"} {
+	for _, tail := range []string{"", "require github.com/relux-works/swarma-envelope " + EnvelopeVersion + "\n", "require github.com/relux-works/swarma-credential-broker " + BrokerVersion + "\n", "require golang.org/x/sys v0.38.0 // indirect\n", "require (\n github.com/relux-works/swarma-envelope " + EnvelopeVersion + " // indirect\n)\n"} {
 		if err := Check([]byte(header + tail)); err != nil {
 			t.Fatal("approved positive", err)
 		}

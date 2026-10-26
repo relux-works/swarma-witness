@@ -3,7 +3,7 @@ package wire
 import (
 	"encoding/base64"
 
-	"github.com/relux-works/waggle/record"
+	"github.com/relux-works/swarma-envelope/record"
 )
 
 // Request has passed shape/encoding checks, never peer or stream authorization.

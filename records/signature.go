@@ -7,8 +7,8 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/relux-works/swarma-envelope/record"
 	"github.com/relux-works/swarma-witness/wire"
-	"github.com/relux-works/waggle/record"
 )
 
 type Role string

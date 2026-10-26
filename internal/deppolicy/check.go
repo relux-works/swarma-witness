@@ -7,10 +7,10 @@ import (
 	"strings"
 )
 
-// WaggleVersion is the accepted S5 pin used by the signature helpers.
-const WaggleVersion = "v0.0.0-20261025015329-5f4e7435d756"
+// EnvelopeVersion is the published pin used by the strict record helpers.
+const EnvelopeVersion = "v0.0.0-20261026200550-5636986d0de5"
 
-// RegistrarVersion is Waggle's exact CCJ dependency, used directly for WS's
+// RegistrarVersion is the envelope module's CCJ dependency, used directly for WS's
 // carrier-aware parser. It does not enable the registrar Loader.
 const RegistrarVersion = "v0.0.0-20261023164451-5f44ebf3f788"
 
@@ -27,7 +27,7 @@ func Check(raw []byte) error {
 	module, version, block := false, false, false
 	seen := map[string]bool{}
 	require := func(fields []string) error {
-		approved := map[string]string{"github.com/relux-works/swarma-credential-broker": BrokerVersion, "golang.org/x/sys": "v0.38.0", "github.com/relux-works/waggle": WaggleVersion, "github.com/relux-works/swarma-registrar": RegistrarVersion}
+		approved := map[string]string{"github.com/relux-works/swarma-credential-broker": BrokerVersion, "golang.org/x/sys": "v0.38.0", "github.com/relux-works/swarma-envelope": EnvelopeVersion, "github.com/relux-works/swarma-registrar": RegistrarVersion}
 		if len(fields) != 2 || approved[fields[0]] == "" || fields[1] != approved[fields[0]] || seen[fields[0]] {
 			return fmt.Errorf("dependency_not_approved")
 		}

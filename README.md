@@ -40,18 +40,20 @@ Unknown outcomes must retain evidence and fence; there is no weaker fallback.
 Local codec and injected transaction checks establish only their documented scope;
 none establishes a qualified serving instance.
 
-Go 1.26.x is required. Strict crypto helpers use reviewed Waggle S5
-`5f4e7435d75697385ff6ce15a7501ac6f31c8ea5`
-(`v0.0.0-20261025015329-5f4e7435d756`). Its pinned registrar CCJ dependency
+Go 1.26.x is required. Strict crypto helpers use
+[`swarma-envelope`](https://github.com/relux-works/swarma-envelope)
+`v0.0.0-20261026200550-5636986d0de5`. The consumed key, signature and base64
+helpers preserve the historical S5 behavior. Its pinned registrar CCJ dependency
 `v0.0.0-20261023164451-5f44ebf3f788` supplies canonical JSON directly.
 The inactive time adapter pins broker QT-2c `b38aeda82fb563503960836c771bcc94e8103810`
 (`v0.0.0-20261025184427-b38aeda82fb5`); its Linux timeconf package requires
 `golang.org/x/sys v0.38.0` indirectly. The module policy permits only these four
-exact versions; unrelated broker TOML/D-Bus modules are not admitted. No verifier is copied and
-no replacement directive is allowed. This aligns with K3's adopted spec and the
-owner-registry module; K3's implementation module still pins S3 at the cited
-contract revision. Freshness/journal adapters and checkpoint verification are
-not activated by this dependency update. Registrar syntax/format checks cite the landed spec revision; they import no
+exact declared requirements; unrelated broker TOML/D-Bus requirements cannot be
+added here. Their existing transitive graph entries do not change. No verifier
+is copied and no replacement directive is allowed. The dependency includes newer
+currency APIs, but this repository imports only its record helpers.
+Freshness/journal adapters, checkpoint verification and /2 profiles remain
+inactive. Registrar syntax/format checks cite the landed spec revision; they import no
 registry package or Loader. Candidate-state truth and authenticated append
 remain separate gates; no legacy format default is used.
 
@@ -75,7 +77,7 @@ published tree. Host scheduling policy is external to this portable Makefile.
 | Bootstrap tests | `make test` | Named bootstrap package tests, 30-second timeout; console output. Full suites belong to review. |
 | Vet | `make vet` | Bootstrap/tool diagnostics on console. |
 | Go build | `make build` | Compiles libraries and the two commands to the Go build cache; no server binary or repository output. |
-| Module verification | `make mod-verify` | Verifies installed module cache entries; exact Waggle, registrar, broker and syscall dependency pins. |
+| Module verification | `make mod-verify` | Verifies installed module cache entries; exact envelope, registrar, broker and syscall dependency pins. |
 | Formatting | `make format` | Lists files needing gofmt on console; empty output is the expected result. |
 | Publication hygiene | `make hygiene` or `go run ./tools/hygiene -check` | Nonzero on bounded private-artifact/key-marker/local-path/identity/tracking/link checks or dependency policy failure. Reports categories and safe relative paths, not matching content. |
 | Private deny list | `go run ./tools/hygiene -check -deny-file <private-list>` | Optional bounded newline-separated forbidden values, held outside the tree; values are not printed. |

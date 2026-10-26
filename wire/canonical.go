@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/relux-works/swarma-envelope/record"
 	"github.com/relux-works/swarma-registrar/ccj"
-	"github.com/relux-works/waggle/record"
 )
 
 const (

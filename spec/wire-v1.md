@@ -8,17 +8,16 @@ authorization, replay ledger or consumer activation. Mode A remains in force.
 
 ## Dependencies and canonical bytes
 
-The strict key/base64/signature helpers are Waggle S5 at
-`5f4e7435d75697385ff6ce15a7501ac6f31c8ea5`, pseudo-version
-`v0.0.0-20261025015329-5f4e7435d756`. Its exact registrar CCJ dependency,
+The strict key/base64/signature helpers are `swarma-envelope` at
+`v0.0.0-20261026200550-5636986d0de5`, preserving the consumed historical S5
+helpers. Its exact registrar CCJ dependency,
 `v0.0.0-20261023164451-5f44ebf3f788`, is also used directly for parsing and
 canonicalization. The dependency policy permits these exact versions only;
-there are no replacements or copied verifiers. This matches the adopted K3
-specification and the owner-registry module pin; K3's implementation module
-still pins S3 at the cited contract revision.
+there are no replacements or copied verifiers. Newer currency APIs in the
+dependency do not activate a Witness verifier or change any local /1 profile.
 
 `wire.Parse` uses the duplicate-aware public registrar reader, then compares the
-received bytes with their canonical encoding. Waggle `record.Parse` alone is
+received bytes with their canonical encoding. Envelope `record.Parse` alone is
 insufficient: it accepts noncanonical whitespace and caps all strings at 8192.
 Container depth/count checks precede parsing; frames and binary encoded sizes
 are bounded before decoding. Canonical JSON parsing is bounded by the complete
@@ -45,7 +44,7 @@ writer_epoch,writer_id,record_key,transport_pins,readers}`.
 
 Service/stream are `[a-z0-9][a-z0-9._-]{0,127}`. Station components are
 `[a-z][a-z0-9-]{0,62}`. Other identities, lineage and principal IDs are 1–255
-UTF-8 bytes. Epochs are positive safe integers. Registry IDs use strict Waggle
+UTF-8 bytes. Epochs are positive safe integers. Registry IDs use strict envelope
 Ed25519 or compressed P-256 key strings. Signing public keys for Keymaker,
 witness, admin and transition are Ed25519 raw32 encoded with `ed25519:` plus
 base64url; their key IDs are D over raw32, with independent role/epoch pins.
@@ -73,7 +72,7 @@ without LF. Domains come from protected context, never received claims:
 | Admin / control receipt | state-witness-admin/1 / state-witness-control-ack/1 |
 | New-key possession proof | state-witness-key-transition/1 |
 
-Waggle validates canonical nonidentity prime-subgroup public points and R,
+The envelope helper validates canonical nonidentity prime-subgroup public points and R,
 S<L, then ordinary Ed25519. Domain, purpose 3, role, computed key ID, station,
 stream and independent epochs are additional checks. Intent at the final safe
 sequence refuses `sequence_exhausted`; resolution at that sequence remains

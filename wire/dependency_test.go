@@ -7,7 +7,7 @@ import (
 	"github.com/relux-works/swarma-witness/internal/deppolicy"
 )
 
-// The exact Waggle/CCJ graph is allowed; previous pins and an unreviewed CCJ
+// The exact envelope/CCJ graph is allowed; previous pins and an unreviewed CCJ
 // upgrade remain forbidden. This checks policy without activating any Loader.
 func TestWireDependencyPins(t *testing.T) {
 	raw, e := os.ReadFile("../go.mod")
