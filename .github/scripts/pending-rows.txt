@@ -31,3 +31,6 @@ spec/storage-tests.md TestCustodianLifetimeExclusion
 spec/storage-tests.md TestCustodianDeadlineAndInventory
 spec/storage-tests.md TestCustodianConsumerCoverage
 spec/storage-tests.md TestCustodianNativeParity
+spec/storage-tests.md TestCustodianProfileDispatch
+spec/storage-tests.md TestCustodianBridgeConsistentView
+spec/storage-tests.md TestCustodianTerminalNonCommit
