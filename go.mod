@@ -1,6 +1,6 @@
 module github.com/relux-works/swarma-witness
 
-go 1.26.0
+go 1.26.8
 
 require (
 	github.com/relux-works/swarma-credential-broker v0.0.0-20261025184427-b38aeda82fb5

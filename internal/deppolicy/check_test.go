@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-const header = "module github.com/relux-works/swarma-witness\n\ngo 1.26.0\n"
+const header = "module github.com/relux-works/swarma-witness\n\ngo 1.26.8\n"
 
 // Only the approved exact version can be required; no dependency, an allowed
 // dependency, and its indirect form are valid controls. No module is downloaded.
@@ -42,7 +42,7 @@ func TestDependencyPolicyRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, example := range []struct{ body, code string }{
-		{"module example.invalid/other\ngo 1.26.0\n", "module_not_approved"},
+		{"module example.invalid/other\ngo 1.26.8\n", "module_not_approved"},
 		{"module github.com/relux-works/swarma-witness\ngo 1.27.0\n", "go_not_approved"},
 		{header + "require (\n", "module_incomplete"},
 	} {

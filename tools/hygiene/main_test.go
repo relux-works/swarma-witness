@@ -12,7 +12,7 @@ import (
 // category, passes the cleaned module, and requires an explicit check operation.
 func TestHygieneCommandRequiresCleanModule(t *testing.T) {
 	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte("module github.com/relux-works/swarma-witness\n\ngo 1.26.0\n"), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte("module github.com/relux-works/swarma-witness\n\ngo 1.26.8\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	private := filepath.Join(root, ".task-board")
