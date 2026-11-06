@@ -78,6 +78,16 @@ func TestStorageProtectedFilesAndShortWrites(t *testing.T) {
 	if _, e = openFile(fd, "wide", false); e == nil {
 		t.Fatal("wrong file mode accepted")
 	}
+	if e = os.Chmod(wide, 0600); e != nil {
+		t.Fatal(e)
+	}
+	protected, e := openFile(fd, "wide", false)
+	if e != nil {
+		t.Fatal("valid directory and file rejected", e)
+	}
+	if e = protected.Close(); e != nil {
+		t.Fatal(e)
+	}
 	if e = os.Chmod(dir, 0770); e != nil {
 		t.Fatal(e)
 	}
