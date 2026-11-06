@@ -61,8 +61,19 @@ func TestStorageProtectedFilesAndShortWrites(t *testing.T) {
 	if _, e = openFile(fd, "../good", false); e == nil {
 		t.Fatal("path traversal accepted")
 	}
-	if e = os.WriteFile(filepath.Join(dir, "wide"), original, 0644); e != nil {
+	wide := filepath.Join(dir, "wide")
+	if e = os.WriteFile(wide, original, 0644); e != nil {
 		t.Fatal(e)
+	}
+	if e = os.Chmod(wide, 0644); e != nil {
+		t.Fatal(e)
+	}
+	info, e := os.Stat(wide)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if got := info.Mode().Perm(); got != 0644 {
+		t.Fatalf("wide fixture mode = %04o, want 0644", got)
 	}
 	if _, e = openFile(fd, "wide", false); e == nil {
 		t.Fatal("wrong file mode accepted")
