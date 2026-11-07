@@ -51,3 +51,19 @@ func TestDependencyPolicyRepository(t *testing.T) {
 		}
 	}
 }
+
+// The declared Go minimum has an adjacent patch boundary. Both modules use the
+// same complete grammar without dependencies, so only the patch version differs.
+func TestDependencyPolicyGoPatchMinimum(t *testing.T) {
+	t.Run("Minimum", func(t *testing.T) {
+		if err := Check([]byte(header)); err != nil {
+			t.Fatal("declared Go minimum rejected", err)
+		}
+	})
+	t.Run("BelowMinimum", func(t *testing.T) {
+		below := "module github.com/relux-works/swarma-witness\n\ngo 1.26.9\n"
+		if err := Check([]byte(below)); err == nil || err.Error() != "go_not_approved" {
+			t.Fatalf("below-minimum Go patch: want go_not_approved, got %v", err)
+		}
+	})
+}
