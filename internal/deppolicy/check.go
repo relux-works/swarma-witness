@@ -17,7 +17,7 @@ const RegistrarVersion = "v0.0.0-20261023164451-5f44ebf3f788"
 // BrokerVersion supplies the inactive QT-2c codec and pure check, not activation.
 const BrokerVersion = "v0.0.0-20261025184427-b38aeda82fb5"
 
-var goVersion = regexp.MustCompile(`^1\.26\.[0-9]+$`)
+var goVersion = regexp.MustCompile(`^1\.26\.0*[1-9][0-9]+$`)
 
 // Check permits only the module baseline and explicitly approved exact requires.
 // Unknown directives, replacements and unpinned transitive modules fail closed.

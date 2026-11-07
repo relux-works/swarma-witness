@@ -67,3 +67,38 @@ func TestDependencyPolicyGoPatchMinimum(t *testing.T) {
 		}
 	})
 }
+
+// Preserve the decimal patch grammar and later-patch range without converting
+// unbounded patch strings to a machine-sized integer.
+func TestDependencyPolicyGoPatchRange(t *testing.T) {
+	for _, example := range []struct {
+		version string
+		allowed bool
+	}{
+		{"1.26.0", false},
+		{"1.26.000", false},
+		{"1.26.09", false},
+		{"1.26.10", true},
+		{"1.26.010", true},
+		{"1.26.11", true},
+		{"1.26.100", true},
+		{"1.26.18446744073709551616", true},
+		{"1.26.+10", false},
+		{"1.26.10rc1", false},
+		{"1.26.1.0", false},
+		{"1.26.", false},
+		{"1.27.10", false},
+	} {
+		t.Run(example.version, func(t *testing.T) {
+			raw := "module github.com/relux-works/swarma-witness\n\ngo " + example.version + "\n"
+			err := Check([]byte(raw))
+			if example.allowed {
+				if err != nil {
+					t.Fatalf("approved Go patch rejected: %v", err)
+				}
+			} else if err == nil || err.Error() != "go_not_approved" {
+				t.Fatalf("unapproved Go patch: want go_not_approved, got %v", err)
+			}
+		})
+	}
+}
